@@ -45,12 +45,13 @@ const styles = StyleSheet.create({
   navigationBar: {
     flexDirection: 'row',
     backgroundColor: '#f0f0f0',
+    justifyContent: 'space-between',  // 아이템 간의 간격을 최대로 설정
     paddingVertical: 5,
-    paddingHorizontal:5,
+    paddingHorizontal: 15,
     height: 90, // 네비게이션 바의 높이를 조정
   },
   tabButton: {
-    flex: 1,
+    width: 75,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 30,
