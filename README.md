@@ -1,1 +1,6 @@
-외부 라이브러리 사용하게 되면 여기에 기록 해 주세요.
+아래의 외부 라이브러리들 설치해야해용
+
+npm install react-native-maps
+npm install react-native-unimodules
+npm install @react-native-community/geolocation
+npm install expo-location
