@@ -1,9 +1,9 @@
 // TabScreen1_mapmode.js
 
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
-import * as Location from 'expo-location';
+import React, { useEffect, useState } from "react";
+import { View, StyleSheet } from "react-native";
+import MapView, { Marker } from "react-native-maps";
+import * as Location from "expo-location";
 
 const TabScreen1_mapmode = () => {
   const [region, setRegion] = useState(null);
@@ -11,8 +11,8 @@ const TabScreen1_mapmode = () => {
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.error('Permission to access location was denied');
+      if (status !== "granted") {
+        console.error("Permission to access location was denied");
         return;
       }
 
@@ -39,7 +39,12 @@ const TabScreen1_mapmode = () => {
           customMapStyle={[]}
           showsUserLocation={true}
         >
-          <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} />
+          <Marker
+            coordinate={{
+              latitude: region.latitude,
+              longitude: region.longitude,
+            }}
+          />
         </MapView>
       )}
     </View>
@@ -56,4 +61,3 @@ const styles = StyleSheet.create({
 });
 
 export default TabScreen1_mapmode;
-

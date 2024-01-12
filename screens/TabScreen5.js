@@ -1,25 +1,25 @@
 // TabScreen5.js
 
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
   tabHeader: {
     height: 110,
-    justifyContent: 'center',
-    alignItems: 'left',
-    backgroundColor: '#f0f0f0',
+    justifyContent: "center",
+    alignItems: "left",
+    backgroundColor: "#f0f0f0",
   },
   tabHeaderText: {
     marginTop: 50,
     marginLeft: 30,
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   contentContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 
@@ -40,4 +40,3 @@ const TabScreen5 = () => (
 );
 
 export default TabScreen5;
-
