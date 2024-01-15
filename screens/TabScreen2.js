@@ -1,6 +1,6 @@
 // TabScreen2.js
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,24 +8,25 @@ import {
   ScrollView,
   StyleSheet,
 } from "react-native";
+import MapView, { Marker } from "react-native-maps";
+import * as Location from "expo-location";
 
 const TabScreen2 = () => {
   const [visibleToggle, setVisibleToggle] = useState(null);
   const [selectedYear, setSelectedYear] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedStartAmPm, setSelectedStartAmPm] = useState(null);
   const [selectedStartHour, setSelectedStartHour] = useState(null);
   const [selectedStartMinute, setSelectedStartMinute] = useState(null);
-  const [selectedEndAmPm, setSelectedEndAmPm] = useState(null);
   const [selectedEndHour, setSelectedEndHour] = useState(null);
   const [selectedEndMinute, setSelectedEndMinute] = useState(null);
-  const [selectedPlace, setSelectedPlace] = useState("기본 주소");
+  const [selectedPlace, setSelectedPlace] = useState("기본 주소"); // 나중에 여기에 기본 주소 값을 가져와야 하나?
   const [selectedGender, setSelectedGender] = useState(null);
   const [selectedStartAge, setSelectedStartAge] = useState(null);
   const [selectedEndAge, setSelectedEndAge] = useState(null);
   const [selectedStartAgeType, setSelectedStartAgeType] = useState(null);
   const [selectedEndAgeType, setSelectedEndAgeType] = useState(null);
+  const [region, setRegion] = useState(null);
   const toggleVisibility = (toggleType) => {
     setVisibleToggle((prev) => (prev === toggleType ? null : toggleType));
   };
@@ -41,23 +42,21 @@ const TabScreen2 = () => {
       case "date":
         setSelectedDate(value);
         break;
-      case "startAmPm":
-        setSelectedStartAmPm(value);
-        break;
       case "startHour":
-        setSelectedStartHour(value);
+        setSelectedStartHour(value === 0 ? 0 : value || null);
+        //setSelectedStartHour(value);
         break;
       case "startMinute":
-        setSelectedStartMinute(value);
-        break;
-      case "endAmPm":
-        setSelectedEndAmPm(value);
+        setSelectedStartMinute(value === 0 ? 0 : value || null);
+        //setSelectedStartMinute(value);
         break;
       case "endHour":
-        setSelectedEndHour(value);
+        setSelectedEndHour(value === 0 ? 0 : value || null);
+        //setSelectedEndHour(value);
         break;
       case "endMinute":
-        setSelectedEndMinute(value);
+        setSelectedEndMinute(value === 0 ? 0 : value || null);
+        //setSelectedEndMinute(value);
         break;
       case "place":
         setSelectedPlace(value);
@@ -95,10 +94,7 @@ const TabScreen2 = () => {
 
   const renderOptions = (values, toggleType) => {
     return (
-      <ScrollView
-        style={styles.optionsContainer}
-        contentContainerStyle={styles.scrollContent}
-      >
+      <ScrollView contentContainerStyle={styles.optionsContainer}>
         {values.map((value, index) => (
           <TouchableOpacity
             key={index}
@@ -110,6 +106,29 @@ const TabScreen2 = () => {
         ))}
       </ScrollView>
     );
+  };
+
+  const handleMapPress = async (event) => {
+    const { coordinate } = event.nativeEvent;
+    setRegion({
+      ...coordinate,
+      latitudeDelta: 0.02,
+      longitudeDelta: 0.02,
+    });
+
+    try {
+      const address = await Location.reverseGeocodeAsync({
+        latitude: coordinate.latitude,
+        longitude: coordinate.longitude,
+      });
+
+      if (address.length > 0) {
+        const selectedAddress = `${address[0].region} ${address[0].city} ${address[0].street} ${address[0].name}`;
+        setSelectedPlace(selectedAddress);
+      }
+    } catch (error) {
+      console.error("주소를 가져오는 중 오류 발생:", error);
+    }
   };
 
   const getDaysInMonth = (year, month) => {
@@ -129,12 +148,32 @@ const TabScreen2 = () => {
     { length: getDaysInMonth(selectedYear, selectedMonth) },
     (_, index) => index + 1
   );
-  const hours = Array.from({ length: 12 }, (_, index) => index + 1);
+  const hours = Array.from({ length: 25 }, (_, index) => index);
   const minutes = Array.from({ length: 12 }, (_, index) => index * 5);
-  const ampm = ["오전", "오후"];
-  const places = ["기본 주소", "새로운 주소"];
+  // const places = ["기본 주소", "새로운 주소"];
   const ages = Array.from({ length: 36 }, (_, index) => index + 1);
   const types = ["세", "개월"];
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        console.error("Permission to access location was denied");
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Lowest,
+      });
+
+      setRegion({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+      });
+    })();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -142,260 +181,266 @@ const TabScreen2 = () => {
         <Text style={styles.tabHeaderText}>맡기</Text>
       </View>
       <ScrollView>
-      <View style={styles.dateContainer}>
-        <Text style={styles.subtitle}>맡길 날짜를 선택해주세요</Text>
+        <View style={styles.dateContainer}>
+          <Text style={styles.subtitle}>맡길 날짜를 선택해주세요</Text>
 
-        <View style={styles.toggleContainer}>
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => toggleVisibility("year")}
-          >
-            <Text style={selectedYear ? styles.darkgrayText : styles.grayText}>
-              {selectedYear ? `${selectedYear}` : "year"}
-            </Text>
-            {visibleToggle === "year" && renderOptions(years, "year")}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => toggleVisibility("month")}
-          >
-            <Text style={selectedMonth ? styles.darkgrayText : styles.grayText}>
-              {selectedMonth ? `${selectedMonth}` : "month"}
-            </Text>
-            {visibleToggle === "month" && renderOptions(months, "month")}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => toggleVisibility("date")}
-          >
-            <Text style={selectedDate ? styles.darkgrayText : styles.grayText}>
-              {selectedDate ? `${selectedDate}` : "date"}
-            </Text>
-            {visibleToggle === "date" && renderOptions(dates, "date")}
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.timeContainer}>
-        <Text style={styles.subtitle}>맡길 시간을 선택해주세요</Text>
-
-        <View style={styles.toggleContainer}>
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => toggleVisibility("startAmPm")}
-          >
-            <Text
-              style={selectedStartAmPm ? styles.darkgrayText : styles.grayText}
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => toggleVisibility("year")}
             >
-              {selectedStartAmPm ? `${selectedStartAmPm}` : "오전"}
-            </Text>
-            {visibleToggle === "startAmPm" && renderOptions(ampm, "startAmPm")}
-          </TouchableOpacity>
+              <Text
+                style={selectedYear ? styles.darkgrayText : styles.grayText}
+              >
+                {selectedYear ? `${selectedYear}` : "year"}
+              </Text>
+              {visibleToggle === "year" && renderOptions(years, "year")}
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => toggleVisibility("startHour")}
-          >
-            <Text
-              style={selectedStartHour ? styles.darkgrayText : styles.grayText}
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => toggleVisibility("month")}
             >
-              {selectedStartHour ? `${selectedStartHour}` : "00 시"}
-            </Text>
-            {visibleToggle === "startHour" && renderOptions(hours, "startHour")}
-          </TouchableOpacity>
+              <Text
+                style={selectedMonth ? styles.darkgrayText : styles.grayText}
+              >
+                {selectedMonth ? `${selectedMonth}` : "month"}
+              </Text>
+              {visibleToggle === "month" && renderOptions(months, "month")}
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => toggleVisibility("startMinute")}
-          >
-            <Text
-              style={
-                selectedStartMinute ? styles.darkgrayText : styles.grayText
-              }
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => toggleVisibility("date")}
             >
-              {selectedStartMinute ? `${selectedStartMinute}` : "00 분"}
-            </Text>
-            {visibleToggle === "startMinute" &&
-              renderOptions(minutes, "startMinute")}
-          </TouchableOpacity>
-          <View style={styles.timeBox}>
-            <Text style={styles.darkgrayText}>부터</Text>
+              <Text
+                style={selectedDate ? styles.darkgrayText : styles.grayText}
+              >
+                {selectedDate ? `${selectedDate}` : "date"}
+              </Text>
+              {visibleToggle === "date" && renderOptions(dates, "date")}
+            </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.toggleContainer}>
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => toggleVisibility("endAmPm")}
-          >
-            <Text
-              style={selectedEndAmPm ? styles.darkgrayText : styles.grayText}
+        <View style={styles.timeContainer}>
+          <Text style={styles.subtitle}>맡길 시간을 선택해주세요</Text>
+
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => toggleVisibility("startHour")}
             >
-              {selectedEndAmPm ? `${selectedEndAmPm}` : "오전"}
-            </Text>
-            {visibleToggle === "endAmPm" && renderOptions(ampm, "endAmPm")}
-          </TouchableOpacity>
+              <Text
+                style={
+                  selectedStartHour ? styles.darkgrayText : styles.grayText
+                }
+              >
+                {selectedStartHour ? `${selectedStartHour}` : "00 시"}
+              </Text>
+              {visibleToggle === "startHour" &&
+                renderOptions(hours, "startHour")}
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => toggleVisibility("endHour")}
-          >
-            <Text
-              style={selectedEndHour ? styles.darkgrayText : styles.grayText}
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => toggleVisibility("startMinute")}
             >
-              {selectedEndHour ? `${selectedEndHour}` : "00 시"}
-            </Text>
-            {visibleToggle === "endHour" && renderOptions(hours, "endHour")}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => toggleVisibility("endMinute")}
-          >
-            <Text
-              style={selectedEndMinute ? styles.darkgrayText : styles.grayText}
-            >
-              {selectedEndMinute ? `${selectedEndMinute}` : "00 분"}
-            </Text>
-            {visibleToggle === "endMinute" &&
-              renderOptions(minutes, "endMinute")}
-          </TouchableOpacity>
-          <View style={styles.timeBox}>
-            <Text style={styles.darkgrayText}>까지</Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.placeContainer}>
-        <Text style={styles.subtitle}>맡길 장소를 선택해주세요</Text>
-
-        <View style={styles.placeRow}>
-          <View style={styles.placeBox}>
-            <Text style={styles.lightgrayText}>기본 주소</Text>
-          </View>
-          <View style={styles.placeContent}>
-            <Text style={styles.darkgrayText}>현대 2차 아파트 204동 301호</Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.filterContainer}>
-        <Text style={styles.subtitle}>필터를 설정해주세요</Text>
-
-        {/* 성별 선택 버튼 */}
-        <View style={styles.toggleContainer}>
-          <View style={styles.placeBox}>
-            <Text style={styles.lightgrayText}>성별</Text>
-          </View>
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              selectedGender === "남자" && styles.selectedButton,
-            ]}
-            onPress={() => handleGenderSelection("남자")}
-          >
-            <Text
-              style={
-                selectedGender === "남자" ? styles.whiteText : styles.grayText
-              }
-            >
-              남자
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              selectedGender === "여자" && styles.selectedButton,
-            ]}
-            onPress={() => handleGenderSelection("여자")}
-          >
-            <Text
-              style={
-                selectedGender === "여자" ? styles.whiteText : styles.grayText
-              }
-            >
-              여자
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* 나이 선택 버튼 */}
-        <View style={styles.toggleContainer}>
-          <View style={styles.placeBox}>
-            <Text style={styles.lightgrayText}>나이</Text>
+              <Text
+                style={
+                  selectedStartMinute ? styles.darkgrayText : styles.grayText
+                }
+              >
+                {selectedStartMinute ? `${selectedStartMinute}` : "00 분"}
+              </Text>
+              {visibleToggle === "startMinute" &&
+                renderOptions(minutes, "startMinute")}
+            </TouchableOpacity>
+            <View style={styles.timeBox}>
+              <Text style={styles.darkgrayText}>부터</Text>
+            </View>
           </View>
 
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => toggleVisibility("startAge")}
-          >
-            <Text
-              style={selectedStartAge ? styles.darkgrayText : styles.grayText}
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => toggleVisibility("endHour")}
             >
-              {selectedStartAge ? `${selectedStartAge}` : "0"}
-            </Text>
-            {visibleToggle === "startAge" && renderOptions(ages, "startAge")}
-          </TouchableOpacity>
+              <Text
+                style={selectedEndHour ? styles.darkgrayText : styles.grayText}
+              >
+                {selectedEndHour ? `${selectedEndHour}` : "00 시"}
+              </Text>
+              {visibleToggle === "endHour" && renderOptions(hours, "endHour")}
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => toggleVisibility("startAgeType")}
-          >
-            <Text
-              style={
-                selectedStartAgeType ? styles.darkgrayText : styles.grayText
-              }
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => toggleVisibility("endMinute")}
             >
-              {selectedStartAgeType ? `${selectedStartAgeType}` : "세"}
-            </Text>
-            {visibleToggle === "startAgeType" &&
-              renderOptions(types, "startAgeType")}
-          </TouchableOpacity>
-
-          <View style={styles.timeBox}>
-            <Text style={styles.darkgrayText}>부터</Text>
+              <Text
+                style={
+                  selectedEndMinute ? styles.darkgrayText : styles.grayText
+                }
+              >
+                {selectedEndMinute ? `${selectedEndMinute}` : "00 분"}
+              </Text>
+              {visibleToggle === "endMinute" &&
+                renderOptions(minutes, "endMinute")}
+            </TouchableOpacity>
+            <View style={styles.timeBox}>
+              <Text style={styles.darkgrayText}>까지</Text>
+            </View>
           </View>
         </View>
 
-        <View style={styles.toggleContainer}>
-          <View style={styles.whiteBox}>
-            <Text style={styles.whiteText}>나이</Text>
+        <View style={styles.placeContainer}>
+          <Text style={styles.subtitle}>맡길 장소를 선택해주세요</Text>
+
+          <View style={styles.placeRow}>
+            <View style={styles.placeContent}>
+              <Text style={styles.darkgrayText}>{selectedPlace}</Text>
+            </View>
           </View>
 
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => toggleVisibility("endAge")}
-          >
-            <Text
-              style={selectedEndAge ? styles.darkgrayText : styles.grayText}
-            >
-              {selectedEndAge ? `${selectedEndAge}` : "0"}
-            </Text>
-            {visibleToggle === "endAge" && renderOptions(ages, "endAge")}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => toggleVisibility("endAgeType")}
-          >
-            <Text
-              style={selectedEndAgeType ? styles.darkgrayText : styles.grayText}
-            >
-              {selectedEndAgeType ? `${selectedEndAgeType}` : "세"}
-            </Text>
-            {visibleToggle === "endAgeType" &&
-              renderOptions(types, "endAgeType")}
-          </TouchableOpacity>
-
-          <View style={styles.timeBox}>
-            <Text style={styles.darkgrayText}>까지</Text>
+          <View style={styles.otherBox}>
+            {region && (
+              <MapView
+                style={styles.map}
+                region={region}
+                provider="google"
+                customMapStyle={[]}
+                showsUserLocation={true}
+                onPress={handleMapPress}
+              >
+                <Marker
+                  coordinate={{
+                    latitude: region.latitude,
+                    longitude: region.longitude,
+                  }}
+                />
+              </MapView>
+            )}
           </View>
         </View>
-      </View>
-      <PostButtonContainer />
+
+        <View style={styles.filterContainer}>
+          <Text style={styles.subtitle}>필터를 설정해주세요</Text>
+
+          {/* 성별 선택 버튼 */}
+          <View style={styles.toggleContainer}>
+            <View style={styles.placeBox}>
+              <Text style={styles.lightgrayText}>성별</Text>
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                selectedGender === "남자" && styles.selectedButton,
+              ]}
+              onPress={() => handleGenderSelection("남자")}
+            >
+              <Text
+                style={
+                  selectedGender === "남자" ? styles.whiteText : styles.grayText
+                }
+              >
+                남자
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                selectedGender === "여자" && styles.selectedButton,
+              ]}
+              onPress={() => handleGenderSelection("여자")}
+            >
+              <Text
+                style={
+                  selectedGender === "여자" ? styles.whiteText : styles.grayText
+                }
+              >
+                여자
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* 나이 선택 버튼 */}
+          <View style={styles.toggleContainer}>
+            <View style={styles.placeBox}>
+              <Text style={styles.lightgrayText}>나이</Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => toggleVisibility("startAge")}
+            >
+              <Text
+                style={selectedStartAge ? styles.darkgrayText : styles.grayText}
+              >
+                {selectedStartAge ? `${selectedStartAge}` : "0"}
+              </Text>
+              {visibleToggle === "startAge" && renderOptions(ages, "startAge")}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => toggleVisibility("startAgeType")}
+            >
+              <Text
+                style={
+                  selectedStartAgeType ? styles.darkgrayText : styles.grayText
+                }
+              >
+                {selectedStartAgeType ? `${selectedStartAgeType}` : "세"}
+              </Text>
+              {visibleToggle === "startAgeType" &&
+                renderOptions(types, "startAgeType")}
+            </TouchableOpacity>
+
+            <View style={styles.timeBox}>
+              <Text style={styles.darkgrayText}>부터</Text>
+            </View>
+          </View>
+
+          <View style={styles.toggleContainer}>
+            <View style={styles.whiteBox}>
+              <Text style={styles.whiteText}>나이</Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => toggleVisibility("endAge")}
+            >
+              <Text
+                style={selectedEndAge ? styles.darkgrayText : styles.grayText}
+              >
+                {selectedEndAge ? `${selectedEndAge}` : "0"}
+              </Text>
+              {visibleToggle === "endAge" && renderOptions(ages, "endAge")}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => toggleVisibility("endAgeType")}
+            >
+              <Text
+                style={
+                  selectedEndAgeType ? styles.darkgrayText : styles.grayText
+                }
+              >
+                {selectedEndAgeType ? `${selectedEndAgeType}` : "세"}
+              </Text>
+              {visibleToggle === "endAgeType" &&
+                renderOptions(types, "endAgeType")}
+            </TouchableOpacity>
+
+            <View style={styles.timeBox}>
+              <Text style={styles.darkgrayText}>까지</Text>
+            </View>
+          </View>
+        </View>
+        <PostButtonContainer />
       </ScrollView>
     </View>
   );
@@ -482,12 +527,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 10,
   },
+  otherBox: {
+    marginVertical: 20,
+    marginHorizontal: 15,
+  },
+  map: {
+    flex: 1,
+    height: 200,
+  },
   selectedButton: {
     backgroundColor: "#A5D699",
   },
   postButtonContainer: {
     alignItems: "center",
     marginTop: 5,
+    marginBottom: 30,
   },
   postButton: {
     backgroundColor: "#A5D699",
@@ -496,10 +550,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   optionsContainer: {
-    maxHeight: 150,
+    //maxHeight: 150,
     marginTop: 5,
-    borderWidth: 1,
-    borderColor: "#E6E6E6",
     borderRadius: 10,
   },
   scrollContent: {
