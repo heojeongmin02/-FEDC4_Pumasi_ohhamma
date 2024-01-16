@@ -84,8 +84,8 @@ const TabScreen2 = () => {
     setVisibleToggle(null);
   };
 
-  const PostButtonContainer = () => (
-    <View style={styles.postButtonContainer}>
+  const PostButtonContainer = ({ onPress }) => (
+    <View style={styles.postButtonContainer} onPress={onPress}>
       <TouchableOpacity style={styles.postButton}>
         <Text style={styles.whiteText}>게시하기</Text>
       </TouchableOpacity>
@@ -175,6 +175,46 @@ const TabScreen2 = () => {
     })();
   }, []);
 
+  // 데이터 포맷
+  const formatMonth =
+    selectedMonth && selectedMonth.toString().padStart(2, "0");
+  const formatDate = selectedDate && selectedDate.toString().padStart(2, "0");
+  const formatDateToSend = `${selectedYear}${formatMonth}${formatDate}`;
+  const formatStartHour =
+    selectedStartHour && selectedStartHour.toString().padStart(2, "0");
+  const formatStartMinute =
+    selectedStartMinute && selectedStartMinute.toString().padStart(2, "0");
+  const formatEndHour =
+    selectedEndHour && selectedEndHour.toString().padStart(2, "0");
+  const formatEndMinute =
+    selectedEndMinute && selectedEndMinute.toString().padStart(2, "0");
+
+  const handlePostData = async () => {
+    // POST에 필요한 데이터 정의
+    const postData = {
+      date: formatDateToSend,
+      start_time: formatStartHour * 100 + formatStartMinute,
+      end_time: formatEndHour * 100 + formatEndMinute,
+      //child_age: selectedStartAge ~~~ // 손 봐야 함
+      rating: 4.2, // 손 봐야 함
+      address: selectedPlace,
+      email: "test2@example.com",
+      gender: selectedGender === "남자" ? "m" : "f",
+    };
+
+    try {
+      const response = await fetch("http://pumasi.everdu.com/care", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(postData),
+      });
+    } catch (error) {
+      console.error(response.status);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.tabHeader}>
@@ -182,7 +222,7 @@ const TabScreen2 = () => {
       </View>
       <ScrollView>
         <View style={styles.dateContainer}>
-          <Text style={styles.subtitle}>맡길 날짜를 선택해주세요</Text>
+          <Text style={styles.subtitle}>맡을 날짜를 선택해주세요</Text>
 
           <View style={styles.toggleContainer}>
             <TouchableOpacity
@@ -224,7 +264,7 @@ const TabScreen2 = () => {
         </View>
 
         <View style={styles.timeContainer}>
-          <Text style={styles.subtitle}>맡길 시간을 선택해주세요</Text>
+          <Text style={styles.subtitle}>맡을 시간을 선택해주세요</Text>
 
           <View style={styles.toggleContainer}>
             <TouchableOpacity
@@ -295,7 +335,7 @@ const TabScreen2 = () => {
         </View>
 
         <View style={styles.placeContainer}>
-          <Text style={styles.subtitle}>맡길 장소를 선택해주세요</Text>
+          <Text style={styles.subtitle}>맡을 장소를 선택해주세요</Text>
 
           <View style={styles.placeRow}>
             <View style={styles.placeContent}>
@@ -440,7 +480,7 @@ const TabScreen2 = () => {
             </View>
           </View>
         </View>
-        <PostButtonContainer />
+        <PostButtonContainer onPress={handlePostData} />
       </ScrollView>
     </View>
   );
