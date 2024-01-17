@@ -130,16 +130,11 @@ const TabHeader = ({ name, onTogglePress, mapModeVisible }) => (
   </View>
 );
 
-const ContentBox = ({ content }) => {
+const ContentBox = ({ content, onPlaceChildClick }) => {
   const [isClicked, setIsClicked] = useState(false);
 
   const handleContentBoxClick = () => {
     setIsClicked(!isClicked);
-  };
-
-  const handlePlaceChildClick = () => {
-    // 맡기기 버튼이 클릭되었을 때 수행할 동작을 여기에 추가
-    console.log(`Place child action for ${content.id}`);
   };
 
   return (
@@ -180,7 +175,7 @@ const ContentBox = ({ content }) => {
             </View>
 
             <TouchableOpacity
-              onPress={handlePlaceChildClick}
+              onPress={onPlaceChildClick}
               activeOpacity={0.7}
               style={styles.placeChildButton}
             >
@@ -203,24 +198,31 @@ const TabScreen1 = ({ navigation }) => {
 
   const handlePlaceChildClick = async (contentId) => {
     try {
-      // Send a request to update the status of the content to "reserved"
-      await fetch(`http://pumasi.everdu.com/care/${contentId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      // Update the status locally in the data state
-      setData((prevData) =>
-        prevData.map((content) =>
-          content.id === contentId
-            ? { ...content, status: "reserved" }
-            : content
-        )
+      const response = await fetch(
+        `http://pumasi.everdu.com/care/${contentId}/status`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: "reserved" }),
+        }
       );
+
+      if (response.ok) {
+        setData((prevData) =>
+          prevData.map((content) =>
+            content.id === contentId
+              ? { ...content, status: "reserved" }
+              : content
+          )
+        );
+        alert("예약되었습니다");
+      } else {
+        console.error("Server error:", response.status);
+      }
     } catch (error) {
-      console.error("Error updating status:", error);
+      console.error("Fetch error:", error);
     }
   };
 
@@ -234,7 +236,6 @@ const TabScreen1 = ({ navigation }) => {
         console.error("Error fetching data:", error);
       }
     };
-
     fetchData();
   }, []); // 빈 배열을 전달하여 컴포넌트가 마운트될 때 한 번만 실행
 

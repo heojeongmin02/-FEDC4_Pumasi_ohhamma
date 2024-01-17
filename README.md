@@ -4,3 +4,4 @@ npm install react-native-maps
 npm install react-native-unimodules  
 npm install @react-native-community/geolocation  
 npm install expo-location
+npm install react-native-geocoding
