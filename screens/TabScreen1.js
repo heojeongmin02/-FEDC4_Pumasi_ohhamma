@@ -8,6 +8,7 @@ import {
   ScrollView,
   StyleSheet,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import TabScreen1_mapmode from "./TabScreen1_mapmode";
 
 const styles = StyleSheet.create({
@@ -58,6 +59,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 15,
   },
   horizontalBox: {
+    paddingTop: 15,
+    paddingLeft: 5,
     flexDirection: "row",
     alignItems: "center",
   },
@@ -158,8 +161,6 @@ const ContentBox = ({ content, onPlaceChildClick }) => {
         </Text>
 
         <Text style={styles.contentText}>{`${content.address}`}</Text>
-        <Text style={styles.ContentBox}>{`${content.status}`}</Text>
-
         {isClicked && (
           <View>
             <View style={styles.horizontalBox}>
@@ -191,6 +192,13 @@ const ContentBox = ({ content, onPlaceChildClick }) => {
 const TabScreen1 = ({ navigation }) => {
   const [mapModeVisible, setMapModeVisible] = useState(false);
   const [data, setData] = useState([]);
+  const [selectedStartTime, setSelectedStartTime] = useState(""); // 추가
+  const [selectedEndTime, setSelectedEndTime] = useState("");
+  const [defaultStartTime, setdefaultStartTime] = useState(new Date());
+  const [defaultEndTime, setDefaultEndTime] = useState(new Date());
+
+  defaultStartTime.setHours(13, 0, 0, 0);
+  defaultEndTime.setHours(14, 0, 0, 0);
 
   const handleTogglePress = () => {
     setMapModeVisible(!mapModeVisible);
@@ -212,7 +220,7 @@ const TabScreen1 = ({ navigation }) => {
       if (response.ok) {
         setData((prevData) =>
           prevData.map((content) =>
-            content.id === contentId
+            content.email === contentId
               ? { ...content, status: "reserved" }
               : content
           )
@@ -239,6 +247,38 @@ const TabScreen1 = ({ navigation }) => {
     fetchData();
   }, []); // 빈 배열을 전달하여 컴포넌트가 마운트될 때 한 번만 실행
 
+  useEffect(() => {
+    setSelectedStartTime(1300);
+    setSelectedEndTime(1400);
+  }, []);
+
+  const handleTimeRangeSelect = (startTime, endTime) => {
+    setSelectedStartTime(startTime);
+    setSelectedEndTime(endTime);
+  };
+
+  const onChangeStart = (event, selectedDate) => {
+    if (selectedDate) {
+      setdefaultStartTime(selectedDate);
+      const hours = selectedDate.getHours();
+      const minutes = selectedDate.getMinutes();
+      const timeIn4Digits = hours * 100 + minutes;
+      setSelectedStartTime(timeIn4Digits);
+      console.log(`시작: ${timeIn4Digits}`); // 선택된 시간을 4자리 숫자로 변환한 값 출력
+    }
+  };
+
+  const onChangeEnd = (event, selectedDate) => {
+    if (selectedDate) {
+      setDefaultEndTime(selectedDate);
+      const hours = selectedDate.getHours();
+      const minutes = selectedDate.getMinutes();
+      const timeIn4Digits = hours * 100 + minutes;
+      setSelectedEndTime(timeIn4Digits);
+      console.log(`끝: ${timeIn4Digits}`); // 선택된 시간을 4자리 숫자로 변환한 값 출력
+    }
+  };
+
   return (
     <View style={styles.container}>
       <TabHeader
@@ -251,13 +291,35 @@ const TabScreen1 = ({ navigation }) => {
         <TabScreen1_mapmode />
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.horizontalBox}>
+            <DateTimePicker
+              value={defaultStartTime}
+              mode={"time"}
+              is24Hour={true}
+              onChange={onChangeStart}
+            />
+            <Text>{`  부터`}</Text>
+            <DateTimePicker
+              value={defaultEndTime}
+              mode={"time"}
+              is24Hour={true}
+              onChange={onChangeEnd}
+            />
+            <Text>{`  까지`}</Text>
+          </View>
+
           {data
-            .filter((content) => content.status !== "reserved")
+            .filter(
+              (content) =>
+                content.status !== "reserved" &&
+                selectedStartTime >= content.start_time &&
+                selectedEndTime <= content.end_time
+            )
             .map((content, index) => (
               <ContentBox
                 key={index}
                 content={content}
-                onPlaceChildClick={() => handlePlaceChildClick(content.id)}
+                onPlaceChildClick={() => handlePlaceChildClick(content.email)}
               />
             ))}
         </ScrollView>
