@@ -5,3 +5,6 @@ npm install react-native-unimodules
 npm install @react-native-community/geolocation  
 npm install expo-location
 npm install react-native-geocoding
+
+이거는 채팅방
+npm install react-navigation react-navigation-stack react-native-gifted-chat
