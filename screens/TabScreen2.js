@@ -80,7 +80,15 @@ const TabScreen2 = () => {
   };
 
   const handleGenderSelection = (gender) => {
-    setSelectedGender(gender);
+    // 이미 선택된 성별이 있을 경우, 선택을 해제하고 새로운 선택을 추가
+    if (selectedGender && selectedGender.includes(gender)) {
+      setSelectedGender((prevGender) =>
+        prevGender.filter((item) => item !== gender)
+      );
+    } else {
+      // 선택된 성별이 없거나, 선택된 성별이 없는 경우 새로운 선택 추가
+      setSelectedGender((prevGender) => [...(prevGender || []), gender]);
+    }
     setVisibleToggle(null);
   };
 
@@ -175,43 +183,64 @@ const TabScreen2 = () => {
     })();
   }, []);
 
-  // 데이터 포맷
-  const formatMonth =
-    selectedMonth && selectedMonth.toString().padStart(2, "0");
-  const formatDate = selectedDate && selectedDate.toString().padStart(2, "0");
-  const formatDateToSend = `${selectedYear}${formatMonth}${formatDate}`;
-  const formatStartHour =
-    selectedStartHour && selectedStartHour.toString().padStart(2, "0");
-  const formatStartMinute =
-    selectedStartMinute && selectedStartMinute.toString().padStart(2, "0");
-  const formatEndHour =
-    selectedEndHour && selectedEndHour.toString().padStart(2, "0");
-  const formatEndMinute =
-    selectedEndMinute && selectedEndMinute.toString().padStart(2, "0");
-
   const handlePostData = async () => {
+    // 데이터 포맷
+    const currentYear = new Date().getFullYear();
+    const formatStartAge = currentYear - selectedStartAge + 1;
+    const formatEndAge = currentYear - selectedEndAge + 1;
+
+    const formatMonth =
+      selectedMonth && selectedMonth.toString().padStart(2, "0");
+    const formatDate = selectedDate && selectedDate.toString().padStart(2, "0");
+    const formatDateToSend = `${selectedYear}${formatMonth}${formatDate}`;
+
+    const formatStartHour =
+      selectedStartHour && selectedStartHour.toString().padStart(2, "0");
+    const formatStartMinute =
+      selectedStartMinute && selectedStartMinute.toString().padStart(2, "0");
+    const formatEndHour =
+      selectedEndHour && selectedEndHour.toString().padStart(2, "0");
+    const formatEndMinute =
+      selectedEndMinute && selectedEndMinute.toString().padStart(2, "0");
+
+    let formatGender;
+    if (selectedGender.includes("남자") && selectedGender.includes("여자")) {
+      formatGender = "both";
+    } else if (selectedGender.includes("남자")) {
+      formatGender = "m";
+    } else if (selectedGender.includes("여자")) {
+      formatGender = "f";
+    } else {
+      formatGender = null; // 선택된 성별이 없는 경우
+    }
+
     // POST에 필요한 데이터 정의
     const postData = {
+      address: selectedPlace,
+      child_age_from: formatStartAge,
+      child_age_to: formatEndAge,
       date: formatDateToSend,
       start_time: formatStartHour * 100 + formatStartMinute,
       end_time: formatEndHour * 100 + formatEndMinute,
-      //child_age: selectedStartAge ~~~ // 손 봐야 함
-      rating: 4.2, // 손 봐야 함
-      address: selectedPlace,
-      email: "test2@example.com",
-      gender: selectedGender === "남자" ? "m" : "f",
+      gender: formatGender,
+      email: "test3@example.com",
+      id: "test3@example.com",
     };
 
     try {
-      const response = await fetch("http://pumasi.everdu.com/care", {
+      const response = await fetch(`http://pumasi.everdu.com/care`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(postData),
       });
+      // 서버 응답 확인
+      if (!response.ok) {
+        console.error(`Server returned ${response.status}`);
+      }
     } catch (error) {
-      console.error(response.status);
+      console.error("Error during fetch:", error);
     }
   };
 
@@ -375,13 +404,17 @@ const TabScreen2 = () => {
             <TouchableOpacity
               style={[
                 styles.toggleButton,
-                selectedGender === "남자" && styles.selectedButton,
+                selectedGender &&
+                  selectedGender.includes("남자") &&
+                  styles.selectedButton,
               ]}
               onPress={() => handleGenderSelection("남자")}
             >
               <Text
                 style={
-                  selectedGender === "남자" ? styles.whiteText : styles.grayText
+                  selectedGender && selectedGender.includes("남자")
+                    ? styles.whiteText
+                    : styles.grayText
                 }
               >
                 남자
@@ -391,13 +424,17 @@ const TabScreen2 = () => {
             <TouchableOpacity
               style={[
                 styles.toggleButton,
-                selectedGender === "여자" && styles.selectedButton,
+                selectedGender &&
+                  selectedGender.includes("여자") &&
+                  styles.selectedButton,
               ]}
               onPress={() => handleGenderSelection("여자")}
             >
               <Text
                 style={
-                  selectedGender === "여자" ? styles.whiteText : styles.grayText
+                  selectedGender && selectedGender.includes("여자")
+                    ? styles.whiteText
+                    : styles.grayText
                 }
               >
                 여자
