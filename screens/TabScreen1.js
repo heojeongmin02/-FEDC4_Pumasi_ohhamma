@@ -280,28 +280,27 @@ const TabScreen1 = ({ navigation }) => {
         onTogglePress={handleTogglePress}
         mapModeVisible={mapModeVisible}
       />
+      <View style={styles.horizontalBox}>
+        <DateTimePicker
+          value={defaultStartTime}
+          mode={"time"}
+          is24Hour={true}
+          onChange={onChangeStart}
+        />
+        <Text>{`  부터`}</Text>
+        <DateTimePicker
+          value={defaultEndTime}
+          mode={"time"}
+          is24Hour={true}
+          onChange={onChangeEnd}
+        />
+        <Text>{`  까지`}</Text>
+      </View>
 
       {mapModeVisible ? (
         <TabScreen1_mapmode />
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.horizontalBox}>
-            <DateTimePicker
-              value={defaultStartTime}
-              mode={"time"}
-              is24Hour={true}
-              onChange={onChangeStart}
-            />
-            <Text>{`  부터`}</Text>
-            <DateTimePicker
-              value={defaultEndTime}
-              mode={"time"}
-              is24Hour={true}
-              onChange={onChangeEnd}
-            />
-            <Text>{`  까지`}</Text>
-          </View>
-
           {data
             .filter(
               (content) =>

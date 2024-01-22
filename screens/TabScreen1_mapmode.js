@@ -154,6 +154,7 @@ const TabScreen1_mapmode = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: 15,
   },
   map: {
     flex: 1,
