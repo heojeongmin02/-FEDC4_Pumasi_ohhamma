@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import TabScreen1_mapmode from "./TabScreen1_mapmode";
+import { idToken } from "./LoginScreen";
 
 const styles = StyleSheet.create({
   container: {
@@ -234,15 +235,27 @@ const TabScreen1 = ({ navigation }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("http://pumasi.everdu.com/care/list");
-        const result = await response.json();
-        setData(result);
+        const response = await fetch("http://pumasi.everdu.com/care/list", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${idToken}`,
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          setData(result);
+        } else {
+          console.error("Error fetching data:", response.statusText);
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
       }
     };
+
     fetchData();
-  }, []); // 빈 배열을 전달하여 컴포넌트가 마운트될 때 한 번만 실행
+  }, []);
 
   useEffect(() => {
     setSelectedStartTime(1300);
@@ -258,7 +271,6 @@ const TabScreen1 = ({ navigation }) => {
       const minutes = selectedDate.getMinutes();
       const timeIn4Digits = hours * 100 + minutes;
       setSelectedStartTime(timeIn4Digits);
-      console.log(`시작: ${timeIn4Digits}`); // 선택된 시간을 4자리 숫자로 변환한 값 출력
     }
   };
 
@@ -269,7 +281,6 @@ const TabScreen1 = ({ navigation }) => {
       const minutes = selectedDate.getMinutes();
       const timeIn4Digits = hours * 100 + minutes;
       setSelectedEndTime(timeIn4Digits);
-      console.log(`끝: ${timeIn4Digits}`); // 선택된 시간을 4자리 숫자로 변환한 값 출력
     }
   };
 

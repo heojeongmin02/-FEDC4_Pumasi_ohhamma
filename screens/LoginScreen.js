@@ -5,12 +5,12 @@ import {
   View,
   Text,
   TextInput,
-  Button,
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
 
 const apiUrl = "http://pumasi.everdu.com";
+let idToken = "";
 
 const LoginScreen = ({ onLogin }) => {
   const [username, setUsername] = useState("");
@@ -31,6 +31,8 @@ const LoginScreen = ({ onLogin }) => {
       });
 
       if (response.ok) {
+        const jsonResponse = await response.json();
+        idToken = jsonResponse.idToken;
         onLogin();
       } else {
         alert("로그인에 실패했습니다. 다시 시도해주세요.");
@@ -142,3 +144,4 @@ const styles = StyleSheet.create({
 });
 
 export default LoginScreen;
+export { idToken };

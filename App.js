@@ -39,7 +39,6 @@ const tabs = [
 
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false); // 로그인 상태를 저장하는 state
-
   // 로그인된 상태에서는 탭 화면을 보여주고, 그렇지 않은 경우 로그인 화면을 보여줌
   return isLoggedIn ? (
     <TabNavigator tabs={tabs} />
