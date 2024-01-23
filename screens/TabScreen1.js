@@ -309,7 +309,14 @@ const TabScreen1 = ({ navigation }) => {
       </View>
 
       {mapModeVisible ? (
-        <TabScreen1_mapmode />
+        <TabScreen1_mapmode
+          data={data.filter(
+            (content) =>
+              content.status !== "reserved" &&
+              selectedStartTime >= content.start_time &&
+              selectedEndTime <= content.end_time
+          )}
+        />
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {data
