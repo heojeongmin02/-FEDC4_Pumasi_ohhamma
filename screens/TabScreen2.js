@@ -7,113 +7,174 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
+  TextInput,
+  Alert,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
+import MultiSlider from "@ptomasroos/react-native-multi-slider";
 
-const TabScreen2 = () => {
-  const [visibleToggle, setVisibleToggle] = useState(null);
-  const [selectedYear, setSelectedYear] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedStartHour, setSelectedStartHour] = useState(null);
-  const [selectedStartMinute, setSelectedStartMinute] = useState(null);
-  const [selectedEndHour, setSelectedEndHour] = useState(null);
-  const [selectedEndMinute, setSelectedEndMinute] = useState(null);
-  const [selectedPlace, setSelectedPlace] = useState("기본 주소"); // 나중에 여기에 기본 주소 값을 가져와야 하나?
-  const [selectedGender, setSelectedGender] = useState(null);
-  const [selectedStartAge, setSelectedStartAge] = useState(null);
-  const [selectedEndAge, setSelectedEndAge] = useState(null);
-  const [selectedStartAgeType, setSelectedStartAgeType] = useState(null);
-  const [selectedEndAgeType, setSelectedEndAgeType] = useState(null);
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  tabHeader: {
+    height: 110,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#f0f0f0",
+  },
+  tabHeaderText: {
+    marginTop: 50,
+    marginLeft: 30,
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  contentContainer: {
+    flex: 1,
+    padding: 20,
+  },
+  dateTimePicker: {
+    marginBottom: 20,
+  },
+  toggleButton: {
+    flex: 1,
+    backgroundColor: "#A5D699",
+    marginTop: 20,
+    marginBottom: 10,
+    padding: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "space-around",
+  },
+  placeBox: {
+    backgroundColor: "#D9D9D9",
+    marginBottom: 10,
+    padding: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "space-around",
+  },
+  toggleButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  toggleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
+  textBox: {
+    backgroundColor: "#ffffff",
+    marginTop: 20,
+    padding: 10,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  darkgrayText: {
+    fontSize: 18,
+    color: "#616161",
+  },
+  lightgrayText: {
+    fontSize: 18,
+    color: "#F5F5F5",
+  },
+  whiteText: {
+    fontSize: 18,
+    color: "#ffffff",
+  },
+  grayText: {
+    fontSize: 18,
+    color: "#D9D9D9",
+  },
+  dateContainer: {
+    marginVertical: 20,
+    marginHorizontal: 15,
+  },
+  timeContainer: {
+    marginVertical: 20,
+    marginHorizontal: 15,
+  },
+  placeContainer: {
+    marginVertical: 20,
+    marginHorizontal: 15,
+  },
+  ageContainer: {
+    marginVertical: 20,
+    marginHorizontal: 15,
+  },
+  genderContainer: {
+    marginVertical: 20,
+    marginHorizontal: 15,
+  },
+  subtitle: {
+    fontSize: 18,
+    marginBottom: 10,
+    color: "#616161",
+  },
+  map: {
+    flex: 1,
+    height: 200,
+  },
+});
+
+const TabScreen2 = ({ navigation }) => {
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedStartTime, setSelectedStartTime] = useState(new Date());
+  const [selectedEndTime, setSelectedEndTime] = useState(new Date());
+  const [selectedPlace, setSelectedPlace] = useState("");
+  const [detailedAddress, setDetailedAddress] = useState("");
   const [region, setRegion] = useState(null);
-  const toggleVisibility = (toggleType) => {
-    setVisibleToggle((prev) => (prev === toggleType ? null : toggleType));
+  const [selectedAgeRange, setSelectedAgeRange] = useState([1, 19]);
+  const [selectedGender, setSelectedGender] = useState([]);
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [showStartAgePicker, setShowStartAgePicker] = useState(false);
+  const [showEndAgePicker, setShowEndAgePicker] = useState(false);
+
+  const [dateButtonSelected, setDateButtonSelected] = useState(false);
+  const [startTimeButtonSelected, setStartTimeButtonSelected] = useState(false);
+  const [endTimeButtonSelected, setEndTimeButtonSelected] = useState(false);
+  const [isPlaceBoxSelected, setIsPlaceBoxSelected] = useState(false);
+  const [isDetailedAddressEntered, setIsDetailedAddressEntered] =
+    useState(false);
+  const [startAgeButtonSelected, setStartAgeButtonSelected] = useState(false);
+  const [endAgeButtonSelected, setEndAgeButtonSelected] = useState(false);
+
+  const handleTogglePress = () => {
+    setShowDatePicker(!showDatePicker);
+    setShowStartTimePicker(false);
+    setShowEndTimePicker(false);
+    setShowStartAgePicker(false);
+    setShowEndAgePicker(false);
   };
 
-  const handleSelection = (value, toggleType) => {
-    switch (toggleType) {
-      case "year":
-        setSelectedYear(value);
-        break;
-      case "month":
-        setSelectedMonth(value);
-        break;
-      case "date":
-        setSelectedDate(value);
-        break;
-      case "startHour":
-        setSelectedStartHour(value === 0 ? 0 : value || null);
-        //setSelectedStartHour(value);
-        break;
-      case "startMinute":
-        setSelectedStartMinute(value === 0 ? 0 : value || null);
-        //setSelectedStartMinute(value);
-        break;
-      case "endHour":
-        setSelectedEndHour(value === 0 ? 0 : value || null);
-        //setSelectedEndHour(value);
-        break;
-      case "endMinute":
-        setSelectedEndMinute(value === 0 ? 0 : value || null);
-        //setSelectedEndMinute(value);
-        break;
-      case "place":
-        setSelectedPlace(value);
-        break;
-      case "startAge":
-        setSelectedStartAge(value);
-        break;
-      case "endAge":
-        setSelectedEndAge(value);
-        break;
-      case "startAgeType":
-        setSelectedStartAgeType(value);
-        break;
-      case "endAgeType":
-        setSelectedEndAgeType(value);
-        break;
-      default:
-        break;
+  const handleDateChange = (event, date) => {
+    setShowDatePicker(false);
+    if (date) {
+      setSelectedDate(date);
+      setDateButtonSelected(true);
     }
-    setVisibleToggle(null);
   };
 
-  const handleGenderSelection = (gender) => {
-    // 이미 선택된 성별이 있을 경우, 선택을 해제하고 새로운 선택을 추가
-    if (selectedGender && selectedGender.includes(gender)) {
-      setSelectedGender((prevGender) =>
-        prevGender.filter((item) => item !== gender)
-      );
-    } else {
-      // 선택된 성별이 없거나, 선택된 성별이 없는 경우 새로운 선택 추가
-      setSelectedGender((prevGender) => [...(prevGender || []), gender]);
+  const handleStartTimeChange = (event, date) => {
+    setShowStartTimePicker(false);
+    if (date) {
+      setSelectedStartTime(date);
+      setStartTimeButtonSelected(true);
     }
-    setVisibleToggle(null);
   };
 
-  const PostButtonContainer = ({ onPress }) => (
-    <View style={styles.postButtonContainer} onPress={onPress}>
-      <TouchableOpacity style={styles.postButton}>
-        <Text style={styles.whiteText}>게시하기</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderOptions = (values, toggleType) => {
-    return (
-      <ScrollView contentContainerStyle={styles.optionsContainer}>
-        {values.map((value, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.optionButton}
-            onPress={() => handleSelection(value, toggleType)}
-          >
-            <Text>{value}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    );
+  const handleEndTimeChange = (event, date) => {
+    setShowEndTimePicker(false);
+    if (date) {
+      setSelectedEndTime(date);
+      setEndTimeButtonSelected(true);
+    }
   };
 
   const handleMapPress = async (event) => {
@@ -133,34 +194,12 @@ const TabScreen2 = () => {
       if (address.length > 0) {
         const selectedAddress = `${address[0].region} ${address[0].city} ${address[0].street} ${address[0].name}`;
         setSelectedPlace(selectedAddress);
+        setIsPlaceBoxSelected(true);
       }
     } catch (error) {
       console.error("주소를 가져오는 중 오류 발생:", error);
     }
   };
-
-  const getDaysInMonth = (year, month) => {
-    if (month === 2) {
-      return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0 ? 29 : 28;
-    } else if ([1, 3, 5, 7, 8, 10, 12].includes(month)) {
-      return 31;
-    } else {
-      return 30;
-    }
-  };
-
-  const getCurrentYear = new Date().getFullYear();
-  const years = Array.from({ length: 2 }, (_, index) => getCurrentYear + index);
-  const months = Array.from({ length: 12 }, (_, index) => index + 1);
-  const dates = Array.from(
-    { length: getDaysInMonth(selectedYear, selectedMonth) },
-    (_, index) => index + 1
-  );
-  const hours = Array.from({ length: 25 }, (_, index) => index);
-  const minutes = Array.from({ length: 12 }, (_, index) => index * 5);
-  // const places = ["기본 주소", "새로운 주소"];
-  const ages = Array.from({ length: 36 }, (_, index) => index + 1);
-  const types = ["세", "개월"];
 
   useEffect(() => {
     (async () => {
@@ -183,65 +222,82 @@ const TabScreen2 = () => {
     })();
   }, []);
 
-  const handlePostData = async () => {
-    // 데이터 포맷
-    const currentYear = new Date().getFullYear();
-    const formatStartAge = currentYear - selectedStartAge + 1;
-    const formatEndAge = currentYear - selectedEndAge + 1;
+  const handleDetailedAddressChange = (text) => {
+    setDetailedAddress(text);
+    setIsDetailedAddressEntered(text.length > 0);
+  };
 
-    const formatMonth =
-      selectedMonth && selectedMonth.toString().padStart(2, "0");
-    const formatDate = selectedDate && selectedDate.toString().padStart(2, "0");
-    const formatDateToSend = `${selectedYear}${formatMonth}${formatDate}`;
-
-    const formatStartHour =
-      selectedStartHour && selectedStartHour.toString().padStart(2, "0");
-    const formatStartMinute =
-      selectedStartMinute && selectedStartMinute.toString().padStart(2, "0");
-    const formatEndHour =
-      selectedEndHour && selectedEndHour.toString().padStart(2, "0");
-    const formatEndMinute =
-      selectedEndMinute && selectedEndMinute.toString().padStart(2, "0");
-
-    let formatGender;
-    if (selectedGender.includes("남자") && selectedGender.includes("여자")) {
-      formatGender = "both";
-    } else if (selectedGender.includes("남자")) {
-      formatGender = "m";
-    } else if (selectedGender.includes("여자")) {
-      formatGender = "f";
-    } else {
-      formatGender = null; // 선택된 성별이 없는 경우
+  const handleStartAgeChange = (value) => {
+    setShowStartAgePicker(false);
+    if (value) {
+      setSelectedStartAge(value);
+      setStartAgeButtonSelected(true);
     }
+  };
 
-    // POST에 필요한 데이터 정의
+  const handleEndAgeChange = (value) => {
+    setShowEndAgePicker(false);
+    if (value) {
+      setSelectedEndAge(value);
+      setEndAgeButtonSelected(true);
+    }
+  };
+
+  const handleGenderSelection = (gender) => {
+    // 이미 선택된 성별인지 확인
+    if (selectedGender.includes(gender)) {
+      // 이미 선택된 성별이면 제거
+      setSelectedGender(selectedGender.filter((item) => item !== gender));
+    } else {
+      // 선택되지 않은 성별이면 추가
+      setSelectedGender([...selectedGender, gender]);
+    }
+  };
+
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}${month}${day}`;
+  };
+
+  const formatTime = (time) => {
+    const hours = String(time.getHours()).padStart(2, "0");
+    const minutes = String(time.getMinutes()).padStart(2, "0");
+    return `${hours}${minutes}`;
+  };
+
+  const formatAge = (age) => {
+    const currentYear = new Date().getFullYear();
+    return currentYear - age;
+  };
+
+  const formatGender = () => {
+    if (selectedGender.length === 1) {
+      if (selectedGender.includes("남자")) {
+        return "m";
+      } else if (selectedGender.includes("여자")) {
+        return "f";
+      }
+    }
+    return "b";
+  };
+
+  const handlePostData = async () => {
     const postData = {
-      address: selectedPlace,
-      child_age_from: formatStartAge,
-      child_age_to: formatEndAge,
-      date: formatDateToSend,
-      start_time: formatStartHour * 100 + formatStartMinute,
-      end_time: formatEndHour * 100 + formatEndMinute,
-      gender: formatGender,
-      email: "test3@example.com",
-      id: "test3@example.com",
+      date: formatDate(selectedDate),
+      start_time: formatTime(selectedStartTime),
+      end_time: formatTime(selectedEndTime),
+      child_age_from: formatAge(selectedAgeRange[0]),
+      child_age_to: formatAge(selectedAgeRange[1]),
+      rating: 5, // 예시 평점
+      address: selectedPlace + " " + detailedAddress,
+      email: "user@example.com", // 예시 이메일
+      gender: formatGender(),
     };
 
-    try {
-      const response = await fetch(`http://pumasi.everdu.com/care`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(postData),
-      });
-      // 서버 응답 확인
-      if (!response.ok) {
-        console.error(`Server returned ${response.status}`);
-      }
-    } catch (error) {
-      console.error("Error during fetch:", error);
-    }
+    Alert.alert("게시하기", JSON.stringify(postData));
+    // 나중엔 삭제할거임~~
   };
 
   return (
@@ -252,44 +308,26 @@ const TabScreen2 = () => {
       <ScrollView>
         <View style={styles.dateContainer}>
           <Text style={styles.subtitle}>맡을 날짜를 선택해주세요</Text>
-
-          <View style={styles.toggleContainer}>
-            <TouchableOpacity
-              style={styles.toggleButton}
-              onPress={() => toggleVisibility("year")}
-            >
-              <Text
-                style={selectedYear ? styles.darkgrayText : styles.grayText}
-              >
-                {selectedYear ? `${selectedYear}` : "year"}
-              </Text>
-              {visibleToggle === "year" && renderOptions(years, "year")}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.toggleButton}
-              onPress={() => toggleVisibility("month")}
-            >
-              <Text
-                style={selectedMonth ? styles.darkgrayText : styles.grayText}
-              >
-                {selectedMonth ? `${selectedMonth}` : "month"}
-              </Text>
-              {visibleToggle === "month" && renderOptions(months, "month")}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.toggleButton}
-              onPress={() => toggleVisibility("date")}
-            >
-              <Text
-                style={selectedDate ? styles.darkgrayText : styles.grayText}
-              >
-                {selectedDate ? `${selectedDate}` : "date"}
-              </Text>
-              {visibleToggle === "date" && renderOptions(dates, "date")}
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              dateButtonSelected ? null : { backgroundColor: "#D9D9D9" },
+            ]}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Text style={styles.toggleButtonText}>
+              {selectedDate.toDateString()}
+            </Text>
+          </TouchableOpacity>
+          {showDatePicker && (
+            <DateTimePicker
+              style={styles.dateTimePicker}
+              value={selectedDate}
+              mode={"date"}
+              display="default"
+              onChange={handleDateChange}
+            />
+          )}
         </View>
 
         <View style={styles.timeContainer}>
@@ -297,67 +335,62 @@ const TabScreen2 = () => {
 
           <View style={styles.toggleContainer}>
             <TouchableOpacity
-              style={styles.toggleButton}
-              onPress={() => toggleVisibility("startHour")}
+              style={[
+                styles.toggleButton,
+                startTimeButtonSelected ? null : { backgroundColor: "#D9D9D9" },
+              ]}
+              onPress={() => setShowStartTimePicker(true)}
             >
-              <Text
-                style={
-                  selectedStartHour ? styles.darkgrayText : styles.grayText
-                }
-              >
-                {selectedStartHour ? `${selectedStartHour}` : "00 시"}
+              <Text style={styles.toggleButtonText}>
+                {selectedStartTime.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </Text>
-              {visibleToggle === "startHour" &&
-                renderOptions(hours, "startHour")}
             </TouchableOpacity>
+            {showStartTimePicker && (
+              <DateTimePicker
+                style={styles.dateTimePicker}
+                value={selectedStartTime}
+                mode={"time"}
+                display="default"
+                is24Hour={true}
+                onChange={handleStartTimeChange}
+              />
+            )}
 
-            <TouchableOpacity
-              style={styles.toggleButton}
-              onPress={() => toggleVisibility("startMinute")}
-            >
-              <Text
-                style={
-                  selectedStartMinute ? styles.darkgrayText : styles.grayText
-                }
-              >
-                {selectedStartMinute ? `${selectedStartMinute}` : "00 분"}
-              </Text>
-              {visibleToggle === "startMinute" &&
-                renderOptions(minutes, "startMinute")}
-            </TouchableOpacity>
-            <View style={styles.timeBox}>
+            <View style={styles.textBox}>
               <Text style={styles.darkgrayText}>부터</Text>
             </View>
           </View>
 
           <View style={styles.toggleContainer}>
             <TouchableOpacity
-              style={styles.toggleButton}
-              onPress={() => toggleVisibility("endHour")}
+              style={[
+                styles.toggleButton,
+                endTimeButtonSelected ? null : { backgroundColor: "#D9D9D9" },
+              ]}
+              onPress={() => setShowEndTimePicker(true)}
             >
-              <Text
-                style={selectedEndHour ? styles.darkgrayText : styles.grayText}
-              >
-                {selectedEndHour ? `${selectedEndHour}` : "00 시"}
+              <Text style={styles.toggleButtonText}>
+                {selectedEndTime.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </Text>
-              {visibleToggle === "endHour" && renderOptions(hours, "endHour")}
             </TouchableOpacity>
+            {showEndTimePicker && (
+              <DateTimePicker
+                style={styles.dateTimePicker}
+                value={selectedEndTime}
+                mode={"time"}
+                display="default"
+                is24Hour={true}
+                onChange={handleEndTimeChange}
+              />
+            )}
 
-            <TouchableOpacity
-              style={styles.toggleButton}
-              onPress={() => toggleVisibility("endMinute")}
-            >
-              <Text
-                style={
-                  selectedEndMinute ? styles.darkgrayText : styles.grayText
-                }
-              >
-                {selectedEndMinute ? `${selectedEndMinute}` : "00 분"}
-              </Text>
-              {visibleToggle === "endMinute" &&
-                renderOptions(minutes, "endMinute")}
-            </TouchableOpacity>
-            <View style={styles.timeBox}>
+            <View style={styles.textBox}>
               <Text style={styles.darkgrayText}>까지</Text>
             </View>
           </View>
@@ -366,303 +399,146 @@ const TabScreen2 = () => {
         <View style={styles.placeContainer}>
           <Text style={styles.subtitle}>맡을 장소를 선택해주세요</Text>
 
-          <View style={styles.placeRow}>
-            <View style={styles.placeContent}>
-              <Text style={styles.darkgrayText}>{selectedPlace}</Text>
-            </View>
-          </View>
+          <View style={{ marginVertical: 10 }} />
 
-          <View style={styles.otherBox}>
-            {region && (
-              <MapView
-                style={styles.map}
-                region={region}
-                provider="google"
-                customMapStyle={[]}
-                showsUserLocation={true}
-                onPress={handleMapPress}
-              >
-                <Marker
-                  coordinate={{
-                    latitude: region.latitude,
-                    longitude: region.longitude,
-                  }}
-                />
-              </MapView>
-            )}
-          </View>
+          <TouchableOpacity
+            style={[
+              styles.placeBox,
+              isPlaceBoxSelected ? { backgroundColor: "#A5D699" } : null,
+            ]}
+            onPress={() => {
+              handleMapPress;
+            }}
+          >
+            <Text
+              style={isPlaceBoxSelected ? styles.whiteText : styles.grayText}
+            >
+              {selectedPlace}
+            </Text>
+          </TouchableOpacity>
+
+          <TextInput
+            style={[
+              styles.placeBox,
+              isDetailedAddressEntered ? { backgroundColor: "#A5D699" } : null,
+              styles.whiteText,
+              { textAlign: "center" },
+            ]}
+            placeholderTextColor={styles.whiteText.color}
+            placeholder="상세 주소 입력"
+            value={detailedAddress}
+            onChangeText={handleDetailedAddressChange}
+          />
+
+          {region && (
+            <MapView
+              style={styles.map}
+              region={region}
+              provider="google"
+              customMapStyle={[]}
+              showsUserLocation={true}
+              onPress={handleMapPress}
+            >
+              <Marker
+                coordinate={{
+                  latitude: region.latitude,
+                  longitude: region.longitude,
+                }}
+              />
+            </MapView>
+          )}
         </View>
 
-        <View style={styles.filterContainer}>
-          <Text style={styles.subtitle}>필터를 설정해주세요</Text>
-
-          {/* 성별 선택 버튼 */}
+        <View style={styles.genderContainer}>
+          <Text style={styles.subtitle}>맡을 성별을 선택해주세요</Text>
           <View style={styles.toggleContainer}>
-            <View style={styles.placeBox}>
-              <Text style={styles.lightgrayText}>성별</Text>
-            </View>
             <TouchableOpacity
               style={[
                 styles.toggleButton,
-                selectedGender &&
-                  selectedGender.includes("남자") &&
-                  styles.selectedButton,
+                selectedGender.includes("남자")
+                  ? null
+                  : { backgroundColor: "#D9D9D9" },
               ]}
               onPress={() => handleGenderSelection("남자")}
             >
-              <Text
-                style={
-                  selectedGender && selectedGender.includes("남자")
-                    ? styles.whiteText
-                    : styles.grayText
-                }
-              >
-                남자
-              </Text>
+              <Text style={styles.toggleButtonText}>남자</Text>
             </TouchableOpacity>
+
+            <View style={{ marginHorizontal: 10 }} />
 
             <TouchableOpacity
               style={[
                 styles.toggleButton,
-                selectedGender &&
-                  selectedGender.includes("여자") &&
-                  styles.selectedButton,
+                selectedGender.includes("여자")
+                  ? null
+                  : { backgroundColor: "#D9D9D9" },
               ]}
               onPress={() => handleGenderSelection("여자")}
             >
-              <Text
-                style={
-                  selectedGender && selectedGender.includes("여자")
-                    ? styles.whiteText
-                    : styles.grayText
-                }
-              >
-                여자
-              </Text>
+              <Text style={styles.toggleButtonText}>여자</Text>
             </TouchableOpacity>
           </View>
+        </View>
 
-          {/* 나이 선택 버튼 */}
+        <View style={styles.ageContainer}>
+          <Text style={styles.subtitle}>맡을 나이를 선택해주세요</Text>
           <View style={styles.toggleContainer}>
-            <View style={styles.placeBox}>
-              <Text style={styles.lightgrayText}>나이</Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.toggleButton}
-              onPress={() => toggleVisibility("startAge")}
-            >
-              <Text
-                style={selectedStartAge ? styles.darkgrayText : styles.grayText}
-              >
-                {selectedStartAge ? `${selectedStartAge}` : "0"}
-              </Text>
-              {visibleToggle === "startAge" && renderOptions(ages, "startAge")}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.toggleButton}
-              onPress={() => toggleVisibility("startAgeType")}
-            >
-              <Text
-                style={
-                  selectedStartAgeType ? styles.darkgrayText : styles.grayText
-                }
-              >
-                {selectedStartAgeType ? `${selectedStartAgeType}` : "세"}
-              </Text>
-              {visibleToggle === "startAgeType" &&
-                renderOptions(types, "startAgeType")}
-            </TouchableOpacity>
-
-            <View style={styles.timeBox}>
-              <Text style={styles.darkgrayText}>부터</Text>
-            </View>
+            <MultiSlider
+              values={selectedAgeRange}
+              sliderLength={300}
+              onValuesChange={(values) => setSelectedAgeRange(values)}
+              min={1}
+              max={19}
+              step={1}
+              allowOverlap
+              snapped
+              unselectedStyle={{
+                backgroundColor: "#D9D9D9", // 선택되지 않은 부분의 배경 색상
+              }}
+              selectedStyle={{
+                backgroundColor: "#A5D699", // 선택된 부분의 배경 색상
+              }}
+              markerStyle={{
+                backgroundColor: "#A5D699", // 마커의 배경 색상
+              }}
+              pressedMarkerStyle={{
+                backgroundColor: "#D9D9D9", // 마커가 눌렸을 때의 배경 색상
+              }}
+            />
           </View>
 
           <View style={styles.toggleContainer}>
-            <View style={styles.whiteBox}>
-              <Text style={styles.whiteText}>나이</Text>
+            <View style={styles.textBox}>
+              <Text style={styles.darkgrayText}>
+                {selectedAgeRange[0]}세 부터
+              </Text>
             </View>
 
-            <TouchableOpacity
-              style={styles.toggleButton}
-              onPress={() => toggleVisibility("endAge")}
-            >
-              <Text
-                style={selectedEndAge ? styles.darkgrayText : styles.grayText}
-              >
-                {selectedEndAge ? `${selectedEndAge}` : "0"}
+            <View style={styles.textBox}>
+              <Text style={styles.darkgrayText}>
+                {selectedAgeRange[1]}세 까지
               </Text>
-              {visibleToggle === "endAge" && renderOptions(ages, "endAge")}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.toggleButton}
-              onPress={() => toggleVisibility("endAgeType")}
-            >
-              <Text
-                style={
-                  selectedEndAgeType ? styles.darkgrayText : styles.grayText
-                }
-              >
-                {selectedEndAgeType ? `${selectedEndAgeType}` : "세"}
-              </Text>
-              {visibleToggle === "endAgeType" &&
-                renderOptions(types, "endAgeType")}
-            </TouchableOpacity>
-
-            <View style={styles.timeBox}>
-              <Text style={styles.darkgrayText}>까지</Text>
             </View>
           </View>
         </View>
-        <PostButtonContainer onPress={handlePostData} />
+
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#A5D699",
+            padding: 15,
+            borderRadius: 10,
+            margin: 20,
+            alignItems: "center",
+          }}
+          onPress={handlePostData}
+        >
+          <Text style={{ color: "white", fontSize: 18, fontWeight: "bold" }}>
+            게시하기
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  tabHeader: {
-    height: 110,
-    justifyContent: "center",
-    alignItems: "left",
-    backgroundColor: "#f0f0f0",
-  },
-  tabHeaderText: {
-    marginTop: 50,
-    marginLeft: 30,
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  dateContainer: {
-    marginVertical: 20,
-    marginHorizontal: 15,
-  },
-  timeContainer: {
-    marginVertical: 20,
-    marginHorizontal: 15,
-  },
-  placeContainer: {
-    marginVertical: 20,
-    marginHorizontal: 15,
-  },
-  filterContainer: {
-    marginVertical: 20,
-    marginHorizontal: 15,
-  },
-  subtitle: {
-    fontSize: 18,
-    marginBottom: 10,
-    color: "#616161",
-  },
-  toggleContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: 5,
-  },
-  toggleButton: {
-    flex: 1,
-    backgroundColor: "#F5F5F5",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    marginBottom: 10,
-    marginRight: 10,
-  },
-  timeBox: {
-    height: 40,
-    backgroundColor: "#ffffff",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  placeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-around",
-    marginTop: 5,
-  },
-  placeBox: {
-    width: 80,
-    height: 40,
-    backgroundColor: "#616161",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 10,
-    marginRight: 10,
-  },
-  placeContent: {
-    flex: 1,
-    height: 40,
-    backgroundColor: "#f5f5f5",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 10,
-  },
-  otherBox: {
-    marginVertical: 20,
-    marginHorizontal: 15,
-  },
-  map: {
-    flex: 1,
-    height: 200,
-  },
-  selectedButton: {
-    backgroundColor: "#A5D699",
-  },
-  postButtonContainer: {
-    alignItems: "center",
-    marginTop: 5,
-    marginBottom: 30,
-  },
-  postButton: {
-    backgroundColor: "#A5D699",
-    paddingVertical: 15,
-    paddingHorizontal: 80,
-    borderRadius: 10,
-  },
-  optionsContainer: {
-    //maxHeight: 150,
-    marginTop: 5,
-    borderRadius: 10,
-  },
-  scrollContent: {
-    paddingBottom: 20,
-  },
-  optionButton: {
-    paddingVertical: 8,
-    alignItems: "center",
-  },
-  lightgrayText: {
-    fontSize: 18,
-    color: "#F5F5F5",
-  },
-  whiteText: {
-    fontSize: 18,
-    color: "#ffffff",
-  },
-  grayText: {
-    fontSize: 18,
-    color: "#D9D9D9",
-  },
-  darkgrayText: {
-    fontSize: 18,
-    color: "#616161",
-  },
-  whiteBox: {
-    width: 80,
-    height: 40,
-    backgroundColor: "#ffffff",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 10,
-    marginRight: 10,
-  },
-});
 
 export default TabScreen2;
