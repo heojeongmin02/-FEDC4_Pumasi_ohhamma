@@ -14,6 +14,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import MultiSlider from "@ptomasroos/react-native-multi-slider";
+import { idToken } from "./LoginScreen";
 
 const styles = StyleSheet.create({
   container: {
@@ -32,12 +33,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
   },
-  contentContainer: {
-    flex: 1,
-    padding: 20,
-  },
   dateTimePicker: {
-    marginBottom: 20,
+    marginBottom: 10,
   },
   toggleButton: {
     flex: 1,
@@ -59,8 +56,7 @@ const styles = StyleSheet.create({
   },
   toggleButtonText: {
     color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 18,
   },
   toggleContainer: {
     flexDirection: "row",
@@ -89,29 +85,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#D9D9D9",
   },
-  dateContainer: {
-    marginVertical: 20,
-    marginHorizontal: 15,
-  },
-  timeContainer: {
-    marginVertical: 20,
-    marginHorizontal: 15,
-  },
-  placeContainer: {
-    marginVertical: 20,
-    marginHorizontal: 15,
-  },
-  ageContainer: {
-    marginVertical: 20,
-    marginHorizontal: 15,
-  },
-  genderContainer: {
-    marginVertical: 20,
+  contentContainer: {
+    marginVertical: 10,
     marginHorizontal: 15,
   },
   subtitle: {
     fontSize: 18,
-    marginBottom: 10,
+    //marginBottom: 10,
     color: "#616161",
   },
   map: {
@@ -124,7 +104,7 @@ const TabScreen2 = ({ navigation }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedStartTime, setSelectedStartTime] = useState(new Date());
   const [selectedEndTime, setSelectedEndTime] = useState(new Date());
-  const [selectedPlace, setSelectedPlace] = useState("");
+  const [selectedPlace, setSelectedPlace] = useState("서울특별시 마포구");
   const [detailedAddress, setDetailedAddress] = useState("");
   const [region, setRegion] = useState(null);
   const [selectedAgeRange, setSelectedAgeRange] = useState([1, 19]);
@@ -133,8 +113,6 @@ const TabScreen2 = ({ navigation }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
-  const [showStartAgePicker, setShowStartAgePicker] = useState(false);
-  const [showEndAgePicker, setShowEndAgePicker] = useState(false);
 
   const [dateButtonSelected, setDateButtonSelected] = useState(false);
   const [startTimeButtonSelected, setStartTimeButtonSelected] = useState(false);
@@ -142,15 +120,11 @@ const TabScreen2 = ({ navigation }) => {
   const [isPlaceBoxSelected, setIsPlaceBoxSelected] = useState(false);
   const [isDetailedAddressEntered, setIsDetailedAddressEntered] =
     useState(false);
-  const [startAgeButtonSelected, setStartAgeButtonSelected] = useState(false);
-  const [endAgeButtonSelected, setEndAgeButtonSelected] = useState(false);
 
   const handleTogglePress = () => {
     setShowDatePicker(!showDatePicker);
     setShowStartTimePicker(false);
     setShowEndTimePicker(false);
-    setShowStartAgePicker(false);
-    setShowEndAgePicker(false);
   };
 
   const handleDateChange = (event, date) => {
@@ -227,29 +201,10 @@ const TabScreen2 = ({ navigation }) => {
     setIsDetailedAddressEntered(text.length > 0);
   };
 
-  const handleStartAgeChange = (value) => {
-    setShowStartAgePicker(false);
-    if (value) {
-      setSelectedStartAge(value);
-      setStartAgeButtonSelected(true);
-    }
-  };
-
-  const handleEndAgeChange = (value) => {
-    setShowEndAgePicker(false);
-    if (value) {
-      setSelectedEndAge(value);
-      setEndAgeButtonSelected(true);
-    }
-  };
-
   const handleGenderSelection = (gender) => {
-    // 이미 선택된 성별인지 확인
     if (selectedGender.includes(gender)) {
-      // 이미 선택된 성별이면 제거
       setSelectedGender(selectedGender.filter((item) => item !== gender));
     } else {
-      // 선택되지 않은 성별이면 추가
       setSelectedGender([...selectedGender, gender]);
     }
   };
@@ -290,14 +245,37 @@ const TabScreen2 = ({ navigation }) => {
       end_time: formatTime(selectedEndTime),
       child_age_from: formatAge(selectedAgeRange[0]),
       child_age_to: formatAge(selectedAgeRange[1]),
-      rating: 5, // 예시 평점
+      rating: 4.2, // 일단은
       address: selectedPlace + " " + detailedAddress,
-      email: "user@example.com", // 예시 이메일
+      email: "test2@example.com", // 일단은
       gender: formatGender(),
     };
 
     Alert.alert("게시하기", JSON.stringify(postData));
     // 나중엔 삭제할거임~~
+
+    try {
+      const response = await fetch("http://pumasi.everdu.com/care/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `${idToken}`,
+        },
+        body: JSON.stringify(postData),
+      });
+      // 서버 응답 확인
+      if (response.ok) {
+        const responseData = await response.json();
+        console.log("서버 응답:", responseData);
+        Alert.alert("게시하기", "게시 성공!");
+      } else {
+        console.error("서버 응답 오류:", response.status);
+        Alert.alert("게시하기", "게시 실패. 서버 응답 오류 발생!");
+      }
+    } catch (error) {
+      console.error("데이터 게시 중 오류:", error);
+      Alert.alert("게시하기", "게시 실패. 에러 발생!");
+    }
   };
 
   return (
@@ -305,8 +283,9 @@ const TabScreen2 = ({ navigation }) => {
       <View style={styles.tabHeader}>
         <Text style={styles.tabHeaderText}>맡기</Text>
       </View>
+      <View style={{ marginVertical: 5 }} />
       <ScrollView>
-        <View style={styles.dateContainer}>
+        <View style={styles.contentContainer}>
           <Text style={styles.subtitle}>맡을 날짜를 선택해주세요</Text>
           <TouchableOpacity
             style={[
@@ -315,7 +294,7 @@ const TabScreen2 = ({ navigation }) => {
             ]}
             onPress={() => setShowDatePicker(true)}
           >
-            <Text style={styles.toggleButtonText}>
+            <Text style={[styles.toggleButtonText, styles.whiteText]}>
               {selectedDate.toDateString()}
             </Text>
           </TouchableOpacity>
@@ -330,7 +309,7 @@ const TabScreen2 = ({ navigation }) => {
           )}
         </View>
 
-        <View style={styles.timeContainer}>
+        <View style={styles.contentContainer}>
           <Text style={styles.subtitle}>맡을 시간을 선택해주세요</Text>
 
           <View style={styles.toggleContainer}>
@@ -341,7 +320,7 @@ const TabScreen2 = ({ navigation }) => {
               ]}
               onPress={() => setShowStartTimePicker(true)}
             >
-              <Text style={styles.toggleButtonText}>
+              <Text style={[styles.toggleButtonText, styles.whiteText]}>
                 {selectedStartTime.toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -358,13 +337,10 @@ const TabScreen2 = ({ navigation }) => {
                 onChange={handleStartTimeChange}
               />
             )}
-
             <View style={styles.textBox}>
               <Text style={styles.darkgrayText}>부터</Text>
             </View>
-          </View>
 
-          <View style={styles.toggleContainer}>
             <TouchableOpacity
               style={[
                 styles.toggleButton,
@@ -372,7 +348,7 @@ const TabScreen2 = ({ navigation }) => {
               ]}
               onPress={() => setShowEndTimePicker(true)}
             >
-              <Text style={styles.toggleButtonText}>
+              <Text style={[styles.toggleButtonText, styles.whiteText]}>
                 {selectedEndTime.toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -389,33 +365,26 @@ const TabScreen2 = ({ navigation }) => {
                 onChange={handleEndTimeChange}
               />
             )}
-
             <View style={styles.textBox}>
               <Text style={styles.darkgrayText}>까지</Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.placeContainer}>
+        <View style={styles.contentContainer}>
           <Text style={styles.subtitle}>맡을 장소를 선택해주세요</Text>
 
           <View style={{ marginVertical: 10 }} />
 
-          <TouchableOpacity
+          <View
             style={[
               styles.placeBox,
               isPlaceBoxSelected ? { backgroundColor: "#A5D699" } : null,
             ]}
-            onPress={() => {
-              handleMapPress;
-            }}
+            onPress={handleMapPress}
           >
-            <Text
-              style={isPlaceBoxSelected ? styles.whiteText : styles.grayText}
-            >
-              {selectedPlace}
-            </Text>
-          </TouchableOpacity>
+            <Text style={styles.whiteText}>{selectedPlace}</Text>
+          </View>
 
           <TextInput
             style={[
@@ -449,7 +418,7 @@ const TabScreen2 = ({ navigation }) => {
           )}
         </View>
 
-        <View style={styles.genderContainer}>
+        <View style={styles.contentContainer}>
           <Text style={styles.subtitle}>맡을 성별을 선택해주세요</Text>
           <View style={styles.toggleContainer}>
             <TouchableOpacity
@@ -480,7 +449,7 @@ const TabScreen2 = ({ navigation }) => {
           </View>
         </View>
 
-        <View style={styles.ageContainer}>
+        <View style={styles.contentContainer}>
           <Text style={styles.subtitle}>맡을 나이를 선택해주세요</Text>
           <View style={styles.toggleContainer}>
             <MultiSlider
@@ -528,13 +497,13 @@ const TabScreen2 = ({ navigation }) => {
             padding: 15,
             borderRadius: 10,
             margin: 20,
+            marginLeft: 40,
+            marginRight: 40,
             alignItems: "center",
           }}
           onPress={handlePostData}
         >
-          <Text style={{ color: "white", fontSize: 18, fontWeight: "bold" }}>
-            게시하기
-          </Text>
+          <Text style={styles.whiteText}>게시하기</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
