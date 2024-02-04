@@ -109,7 +109,7 @@ const TabScreen5 = () => {
     };
 
     fetchData();
-  }, []); // Empty dependency array ensures that the effect runs only once on mount
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -137,7 +137,7 @@ const TabScreen5 = () => {
     };
 
     fetchData();
-  }, []); // Empty dependency array ensures that the effect runs only once on mount
+  }, []);
 
   const UserContentBox = ({ content }) => {
     const [isEditing, setIsEditing] = useState(false);
