@@ -47,4 +47,8 @@ const App = () => {
   );
 };
 
+// const App = () => {
+//   return <TabNavigator tabs={tabs} />;
+// };
+
 export default App;
