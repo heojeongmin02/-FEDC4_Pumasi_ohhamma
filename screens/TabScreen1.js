@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import TabScreen1_mapmode from "./TabScreen1_mapmode";
-import { idToken } from "./LoginScreen";
+import { idToken, userId } from "./LoginScreen";
 
 const styles = StyleSheet.create({
   container: {
@@ -61,7 +61,13 @@ const styles = StyleSheet.create({
   },
   horizontalBox: {
     paddingTop: 15,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  timePicker: {
+    paddingTop: 15,
     paddingLeft: 5,
+    paddingBottom: 10,
     flexDirection: "row",
     alignItems: "center",
   },
@@ -166,11 +172,13 @@ const ContentBox = ({ content, onPlaceChildClick }) => {
           <View>
             <View style={styles.horizontalBox}>
               <Text style={styles.contentText}>{`${
-                new Date().getFullYear() - content.child_age
-              }세, `}</Text>
+                new Date().getFullYear() - content.child_age_from
+              }세 부터 ${
+                new Date().getFullYear() - content.child_age_to
+              }세 대상,  `}</Text>
               <Text style={styles.contentText}>{`${
                 content.gender === "m" ? "남아" : "여아"
-              }, `}</Text>
+              },  `}</Text>
               <Text
                 style={styles.contentText}
               >{`평점: ${content.rating}/5`}</Text>
@@ -291,7 +299,7 @@ const TabScreen1 = ({ navigation }) => {
         onTogglePress={handleTogglePress}
         mapModeVisible={mapModeVisible}
       />
-      <View style={styles.horizontalBox}>
+      <View style={styles.timePicker}>
         <DateTimePicker
           value={defaultStartTime}
           mode={"time"}
@@ -322,12 +330,18 @@ const TabScreen1 = ({ navigation }) => {
           {data
             .filter(
               (content) =>
+                content.id !== userId &&
                 content.status !== "reserved" &&
                 selectedStartTime >= content.start_time &&
                 selectedEndTime <= content.end_time
             )
             .map((content, index) => (
               <ContentBox
+                style={[
+                  Platform.OS === "android"
+                    ? styles.androidShadow
+                    : styles.iosShadow,
+                ]}
                 key={index}
                 content={content}
                 onPlaceChildClick={() => handlePlaceChildClick(content.id)}
