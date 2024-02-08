@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
+  Platform,
   Pressable,
 } from "react-native";
 import { idToken, userId } from "./LoginScreen";

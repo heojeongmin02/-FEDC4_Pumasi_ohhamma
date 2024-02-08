@@ -337,11 +337,6 @@ const TabScreen1 = ({ navigation }) => {
             )
             .map((content, index) => (
               <ContentBox
-                style={[
-                  Platform.OS === "android"
-                    ? styles.androidShadow
-                    : styles.iosShadow,
-                ]}
                 key={index}
                 content={content}
                 onPlaceChildClick={() => handlePlaceChildClick(content.id)}
