@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -9,10 +10,11 @@ import {
   TextInput,
   Modal,
   Platform,
+  ScrollView,
   Button,
   Pressable,
 } from "react-native";
-import { idToken } from "./LoginScreen";
+import { idToken, userId } from "./LoginScreen";
 
 const styles = StyleSheet.create({
   tabHeader: {
@@ -27,6 +29,9 @@ const styles = StyleSheet.create({
     marginLeft: 30,
     fontSize: 24,
     fontWeight: "bold",
+  },
+  scrollContent: {
+    paddingBottom: 20, // 스크롤 가능한 내용 아래 여백
   },
   box: {
     borderWidth: 1,
@@ -69,7 +74,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    width: "80%",
+    width: "90%",
     padding: 20,
     backgroundColor: "white",
     borderRadius: 10,
@@ -127,18 +132,63 @@ const TabHeader = ({ name, onPressPublish }) => (
   </View>
 );
 
-const ContentBox = ({ post }) => {
+const ContentBox = ({ post, onDelete, onUpdate }) => {
+  const isUserPost = post.author === userId;
+
+  const handleDelete = () => {
+    // Confirm deletion before proceeding
+    Alert.alert(
+      "삭제 확인",
+      "정말 삭제하시겠습니까?",
+      [
+        {
+          text: "취소",
+          style: "cancel",
+        },
+        {
+          text: "확인",
+          onPress: () => onDelete(post),
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
   return (
     <View style={styles.box}>
       <Text style={styles.largeText}>{post.title}</Text>
       <Text style={styles.contentText}>{post.content}</Text>
+      {isUserPost && (
+        <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+          <TouchableOpacity onPress={() => onUpdate(post)}>
+            <Text style={{ color: "#808080", marginRight: 10 }}>수정</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleDelete}>
+            <Text style={{ color: "#808080" }}>삭제</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };
 
 const TabScreen3 = () => {
   const [posts, setPosts] = useState([]);
+  const [userData, setUserData] = useState({
+    name: "",
+    point: "",
+    address: "",
+    introduce: "",
+  });
   const [newPostContent, setNewPostContent] = useState({
+    author: `${userId}`,
+    author_address: `${userData.address}`,
+    comment_count: 0,
+    created_date: "",
+    like: 0,
+    modify_date: "",
+    tag: ["생활", "일상"],
+    topic: "생활",
     title: "",
     content: "",
   });
@@ -173,19 +223,23 @@ const TabScreen3 = () => {
   };
 
   // 3. 특정 글을 삭제하는 함수
-  const deletePost = async (postId) => {
+  const deletePost = async (post) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/post/${postId}`, {
+      const response = await fetch(`${API_BASE_URL}/post/${post.post_id}`, {
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `${idToken}`,
+        },
       });
       if (response.ok) {
-        console.log(`Post ${postId} deleted successfully`);
+        console.log(`Post ${post.post_id} deleted successfully`);
         fetchPosts(); // Refresh the post list after deletion
       } else {
-        console.error(`Error deleting post ${postId}`);
+        console.error(`Error deleting post ${post.post_id}`);
       }
     } catch (error) {
-      console.error(`Error deleting post ${postId}:`, error);
+      console.error(`Error deleting post ${post.post_id}:`, error);
     }
   };
 
@@ -212,27 +266,69 @@ const TabScreen3 = () => {
 
   // 5. 새로운 글을 생성하는 함수
   const createPost = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/post`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `${idToken}`,
-        },
-        body: JSON.stringify(newPostContent),
-      });
-      if (response.ok) {
-        console.log("Post created successfully");
-        fetchPosts(); // Refresh the post list after creation
-        setNewPostContent({ title: "", content: "" }); // Clear the input fields
-        setPublishModalVisible(false); // Close the publish modal
-      } else {
-        console.error("Error creating post");
-      }
-    } catch (error) {
-      console.error("Error creating post:", error);
-    }
+    const currentDate = new Date();
+    const formattedDate = `${currentDate.getFullYear()}-${(
+      currentDate.getMonth() + 1
+    )
+      .toString()
+      .padStart(2, "0")}-${currentDate
+      .getDate()
+      .toString()
+      .padStart(2, "0")} ${currentDate
+      .getHours()
+      .toString()
+      .padStart(2, "0")}:${currentDate
+      .getMinutes()
+      .toString()
+      .padStart(2, "0")}:${currentDate
+      .getSeconds()
+      .toString()
+      .padStart(2, "0")}`;
+
+    // Update the state
+    setNewPostContent({
+      ...newPostContent,
+      author: `${userId}`,
+      author_address: `${userData.address}`,
+      comment_count: 0,
+      like: 0,
+      tag: ["생활", "일상"],
+      topic: "생활",
+      created_date: formattedDate,
+      modify_date: formattedDate,
+    });
   };
+
+  useEffect(() => {
+    const postRequest = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/post`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${idToken}`,
+          },
+          body: JSON.stringify(newPostContent),
+        });
+
+        if (response.ok) {
+          console.log("Post created successfully");
+          fetchPosts(); // Refresh the post list after creation
+          setNewPostContent({ title: "", content: "" }); // Clear the input fields
+          setPublishModalVisible(false); // Close the publish modal
+        } else {
+          console.error("Error creating post", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error creating post:", error);
+      }
+    };
+
+    // Check if newPostContent has changed before making the request
+    if (newPostContent.created_date) {
+      postRequest(); // Call the postRequest function
+    }
+  }, [newPostContent]); // Depend on newPostContent to trigger the useEffect
 
   const onPressPublish = () => {
     setPublishModalVisible(true);
@@ -240,7 +336,31 @@ const TabScreen3 = () => {
 
   useEffect(() => {
     // Fetch posts when the component mounts
+    const fetchData = async () => {
+      try {
+        const response = await fetch(
+          `http://pumasi.everdu.com/user/${userId}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `${idToken}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const result = await response.json();
+          setUserData(result);
+        } else {
+          console.error("Error fetching data:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
     fetchPosts();
+    fetchData();
   }, []);
 
   return (
@@ -248,9 +368,20 @@ const TabScreen3 = () => {
       <TabHeader name="커뮤니티" onPressPublish={onPressPublish} />
       <View style={styles.contentContainer}>
         {/* Posts rendering */}
-        {posts.map((post, index) => (
-          <ContentBox key={index} post={post} />
-        ))}
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {posts.map((post, index) => (
+            <ContentBox
+              key={index}
+              post={post}
+              onDelete={deletePost}
+              onUpdate={(postId) => {
+                // Implement the logic to open a modal for updating the post
+                // You can use state to manage the modal visibility and content
+                console.log(`Update post ${postId}`);
+              }}
+            />
+          ))}
+        </ScrollView>
 
         {/* Publish Modal */}
         <Modal
