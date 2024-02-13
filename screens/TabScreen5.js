@@ -170,6 +170,7 @@ const TabScreen5 = () => {
     blood_type: "",
     notes: "",
   });
+  const [careData, setCareData] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
 
   // 기능: 아이를 추가했을때 서버에도 반영하고, 서버 반영을 성공하면 로컬에도 적용함
@@ -200,6 +201,7 @@ const TabScreen5 = () => {
         })
         .then((data) => {
           // 서버 응답이 JSON 형식인 경우
+          console.log(data);
           if (data.success) {
             setChildData((prevData) => [...prevData, { ...newChildData }]);
             setNewChildData({
@@ -254,6 +256,36 @@ const TabScreen5 = () => {
   }, []);
 
   useEffect(() => {
+    const fetchCareData = async () => {
+      try {
+        const response = await fetch(
+          `http://pumasi.everdu.com/user/${userId}/care`, // 변경된 부분
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `${idToken}`,
+            },
+          }
+        );
+
+        console.log(response);
+
+        if (response.ok) {
+          const result = await response.json();
+          setCareData(result);
+        } else {
+          console.error("Error fetching care data:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching care data:", error);
+      }
+    };
+
+    fetchCareData();
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await fetch(
@@ -270,7 +302,6 @@ const TabScreen5 = () => {
         if (response.ok) {
           const result = await response.json();
           setChildData(result);
-          console.log(result);
         } else {
           console.error("Error fetching data:", response.statusText);
         }
@@ -463,6 +494,19 @@ const TabScreen5 = () => {
     );
   };
 
+  const CareContentBox = ({ content }) => {
+    // 맡기기 정보에 대한 렌더링 로직 추가
+    return (
+      <TouchableOpacity style={styles.box}>
+        {/* 맡기기 정보에 대한 텍스트 또는 컴포넌트 렌더링 */}
+        {/* 예시로 간단한 텍스트를 표시하도록 하였습니다. 실제 데이터에 따라 수정이 필요합니다. */}
+        <Text style={styles.largeText}>{content.careName}</Text>
+        <Text style={styles.contentText}>맡긴 날짜: {content.startDate}</Text>
+        <Text style={styles.contentText}>받은 날짜: {content.endDate}</Text>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <TabHeader name="마이페이지" />
@@ -470,6 +514,9 @@ const TabScreen5 = () => {
         <UserContentBox content={userData} />
         {childData.map((child, index) => (
           <ChildContentBox key={index} content={child} />
+        ))}
+        {careData.map((care, index) => (
+          <CareContentBox key={index} content={care} />
         ))}
         <TouchableOpacity
           style={styles.addChildButtonText}

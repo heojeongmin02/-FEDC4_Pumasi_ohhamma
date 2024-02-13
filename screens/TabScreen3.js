@@ -192,7 +192,33 @@ const TabScreen3 = () => {
     title: "",
     content: "",
   });
+  const [modifiedContent, setModifiedContent] = useState({
+    author: `${userId}`,
+    author_address: `${userData.address}`,
+    comment_count: 0,
+    created_date: "",
+    like: 0,
+    modify_date: "",
+    tag: ["생활", "일상"],
+    topic: "생활",
+    title: "",
+    content: "",
+  });
   const [isPublishModalVisible, setPublishModalVisible] = useState(false);
+  const [isModifyModalVisible, setModifyModalVisible] = useState(false);
+
+  // Date formatting function
+  const formatDate = (date) => {
+    return `${date.getFullYear()}-${(date.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")} ${date
+      .getHours()
+      .toString()
+      .padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}:${date
+      .getSeconds()
+      .toString()
+      .padStart(2, "0")}`;
+  };
 
   // 1. 글의 리스트를 조회하는 함수
   const fetchPosts = async () => {
@@ -211,7 +237,7 @@ const TabScreen3 = () => {
     }
   };
 
-  // 2. 특정 글을 조회하는 함수
+  // 2. 특정 글을 조회하는 함수(미구현)
   const fetchPostById = async (postId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/post/${postId}`);
@@ -244,46 +270,45 @@ const TabScreen3 = () => {
   };
 
   // 4. 특정 글을 수정하는 함수
-  const updatePost = async (postId, newContent) => {
+  const updatePost = async () => {
+    currentDate = new Date();
+    const formattedDate = formatDate(currentDate);
+    const updatedContent = {
+      ...modifiedContent,
+      modify_date: formattedDate,
+    };
+
+    setModifiedContent(updatedContent);
+    console.log(updatedContent);
+
     try {
-      const response = await fetch(`${API_BASE_URL}/post/${postId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ content: newContent }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/post/${updatedContent.post_id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${idToken}`,
+          },
+          body: JSON.stringify(updatedContent),
+        }
+      );
       if (response.ok) {
-        console.log(`Post ${postId} updated successfully`);
+        console.log(`Post ${updatedContent.post_id} updated successfully`);
+        setModifyModalVisible(false); // Close the modify modal
         fetchPosts(); // Refresh the post list after update
       } else {
-        console.error(`Error updating post ${postId}`);
+        console.error(`Error updating post ${updatedContent.post_id}`);
       }
     } catch (error) {
-      console.error(`Error updating post ${postId}:`, error);
+      console.error(`Error updating post ${updatedContent.post_id}:`, error);
     }
   };
 
   // 5. 새로운 글을 생성하는 함수
   const createPost = async () => {
     const currentDate = new Date();
-    const formattedDate = `${currentDate.getFullYear()}-${(
-      currentDate.getMonth() + 1
-    )
-      .toString()
-      .padStart(2, "0")}-${currentDate
-      .getDate()
-      .toString()
-      .padStart(2, "0")} ${currentDate
-      .getHours()
-      .toString()
-      .padStart(2, "0")}:${currentDate
-      .getMinutes()
-      .toString()
-      .padStart(2, "0")}:${currentDate
-      .getSeconds()
-      .toString()
-      .padStart(2, "0")}`;
+    const formattedDate = formatDate(currentDate);
 
     // Update the state
     setNewPostContent({
@@ -363,24 +388,38 @@ const TabScreen3 = () => {
     fetchData();
   }, []);
 
+  const handleUpdate = (post) => {
+    setModifiedContent({
+      author: post.author,
+      author_address: post.author_address,
+      comment_count: post.comment_count,
+      created_date: post.created_date,
+      like: post.like,
+      tag: post.tag,
+      topic: post.topic,
+      title: post.title,
+      content: post.content,
+      post_id: post.post_id,
+    });
+    console.log(modifiedContent);
+    setModifyModalVisible(true);
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <TabHeader name="커뮤니티" onPressPublish={onPressPublish} />
       <View style={styles.contentContainer}>
         {/* Posts rendering */}
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {posts.map((post, index) => (
-            <ContentBox
-              key={index}
-              post={post}
-              onDelete={deletePost}
-              onUpdate={(postId) => {
-                // Implement the logic to open a modal for updating the post
-                // You can use state to manage the modal visibility and content
-                console.log(`Update post ${postId}`);
-              }}
-            />
-          ))}
+          {posts &&
+            posts.map((post) => (
+              <ContentBox
+                key={post.post_id}
+                post={post}
+                onDelete={deletePost}
+                onUpdate={handleUpdate}
+              />
+            ))}
         </ScrollView>
 
         {/* Publish Modal */}
@@ -426,6 +465,55 @@ const TabScreen3 = () => {
               <Pressable
                 style={styles.modalCloseButton}
                 onPress={() => setPublishModalVisible(false)}
+              >
+                <Text style={styles.closeButtonText}>닫기</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+        {/* Modify Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={isModifyModalVisible}
+          onRequestClose={() => setModifyModalVisible(false)}
+        >
+          <View
+            style={[
+              styles.modalContainer,
+              Platform.OS === "android"
+                ? styles.androidShadow
+                : styles.iosShadow,
+            ]}
+          >
+            <View style={styles.modalContent}>
+              <TextInput
+                style={styles.inputField}
+                placeholder="글의 제목"
+                value={modifiedContent.title}
+                onChangeText={(text) =>
+                  setModifiedContent({ ...modifiedContent, title: text })
+                }
+              />
+              <TextInput
+                style={styles.inputField}
+                placeholder="글의 내용"
+                multiline
+                value={modifiedContent.content}
+                onChangeText={(text) =>
+                  setModifiedContent({ ...modifiedContent, content: text })
+                }
+              />
+              {/* 확인 버튼 */}
+              <TouchableOpacity
+                style={styles.modalPostButton}
+                onPress={updatePost}
+              >
+                <Text style={styles.editButtonText}>수정</Text>
+              </TouchableOpacity>
+              <Pressable
+                style={styles.modalCloseButton}
+                onPress={() => setModifyModalVisible(false)}
               >
                 <Text style={styles.closeButtonText}>닫기</Text>
               </Pressable>
