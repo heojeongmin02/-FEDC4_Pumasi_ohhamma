@@ -74,10 +74,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    width: "90%",
+    width: "95%",
     padding: 20,
     backgroundColor: "white",
-    borderRadius: 10,
+    borderRadius: 15,
     elevation: 5,
   },
   modalCloseButton: {
@@ -119,6 +119,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  commentContainer: {
+    padding: 10,
+    marginVertical: 5,
+    marginHorizontal: 0,
+    backgroundColor: "#f8f8f8",
+    borderRadius: 10,
+    borderColor: "#ddd",
+    borderWidth: 1,
+  },
+  userName: {
+    fontWeight: "700",
+    fontSize: 13,
+    color: "#333",
+    marginBottom: 3,
+  },
+  comment: {
+    fontSize: 14,
+    color: "#444",
+  },
+  commentContentText: {
+    fontSize: 15,
+    marginTop: 10,
+    marginBottom: 30,
+  },
 });
 
 const API_BASE_URL = "http://pumasi.everdu.com/community";
@@ -132,7 +156,7 @@ const TabHeader = ({ name, onPressPublish }) => (
   </View>
 );
 
-const ContentBox = ({ post, onDelete, onUpdate }) => {
+const ContentBox = ({ post, onView, onDelete, onUpdate }) => {
   const isUserPost = post.author === userId;
 
   const handleDelete = () => {
@@ -155,7 +179,7 @@ const ContentBox = ({ post, onDelete, onUpdate }) => {
   };
 
   return (
-    <View style={styles.box}>
+    <TouchableOpacity style={styles.box} onPress={() => onView(post)}>
       <Text style={styles.largeText}>{post.title}</Text>
       <Text style={styles.contentText}>{post.content}</Text>
       {isUserPost && (
@@ -168,12 +192,23 @@ const ContentBox = ({ post, onDelete, onUpdate }) => {
           </TouchableOpacity>
         </View>
       )}
+    </TouchableOpacity>
+  );
+};
+
+const ChatComponent = ({ userName, comment }) => {
+  console.log(comment);
+  return (
+    <View style={styles.commentContainer}>
+      <Text style={styles.userName}>{userName}</Text>
+      <Text style={styles.comment}>{comment}</Text>
     </View>
   );
 };
 
 const TabScreen3 = () => {
   const [posts, setPosts] = useState([]);
+  const [thePost, setThePost] = useState([]);
   const [userData, setUserData] = useState({
     name: "",
     point: "",
@@ -206,6 +241,7 @@ const TabScreen3 = () => {
   });
   const [isPublishModalVisible, setPublishModalVisible] = useState(false);
   const [isModifyModalVisible, setModifyModalVisible] = useState(false);
+  const [isViewModalVisible, setViewModalVisible] = useState(false);
 
   // Date formatting function
   const formatDate = (date) => {
@@ -237,14 +273,22 @@ const TabScreen3 = () => {
     }
   };
 
-  // 2. 특정 글을 조회하는 함수(미구현)
-  const fetchPostById = async (postId) => {
+  // 2. 특정 글을 조회하는 함수
+  const fetchPostById = async (post) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/post/${postId}`);
+      const response = await fetch(`${API_BASE_URL}/post/${post.post_id}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `${idToken}`,
+        },
+      });
       const data = await response.json();
-      console.log("Fetched post:", data);
+      setThePost(data);
+      console.log(thePost);
+      setViewModalVisible(true);
     } catch (error) {
-      console.error(`Error fetching post ${postId}:`, error);
+      console.error(`Error fetching post ${post.post_id}:`, error);
     }
   };
 
@@ -324,6 +368,7 @@ const TabScreen3 = () => {
     });
   };
 
+  // 6. 글 생성을 보조하는 함수
   useEffect(() => {
     const postRequest = async () => {
       try {
@@ -359,6 +404,7 @@ const TabScreen3 = () => {
     setPublishModalVisible(true);
   };
 
+  // Fetch user data
   useEffect(() => {
     // Fetch posts when the component mounts
     const fetchData = async () => {
@@ -388,6 +434,7 @@ const TabScreen3 = () => {
     fetchData();
   }, []);
 
+  // 글 업데이트를 보조하는 함수
   const handleUpdate = (post) => {
     setModifiedContent({
       author: post.author,
@@ -416,6 +463,7 @@ const TabScreen3 = () => {
               <ContentBox
                 key={post.post_id}
                 post={post}
+                onView={fetchPostById}
                 onDelete={deletePost}
                 onUpdate={handleUpdate}
               />
@@ -514,6 +562,41 @@ const TabScreen3 = () => {
               <Pressable
                 style={styles.modalCloseButton}
                 onPress={() => setModifyModalVisible(false)}
+              >
+                <Text style={styles.closeButtonText}>닫기</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+        {/* View Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={isViewModalVisible}
+          onRequestClose={() => setViewModalVisible(false)}
+        >
+          <View
+            style={[
+              styles.modalContainer,
+              Platform.OS === "android"
+                ? styles.androidShadow
+                : styles.iosShadow,
+            ]}
+          >
+            <View style={styles.modalContent}>
+              <Text style={styles.largeText}>{thePost.title}</Text>
+              <Text style={styles.commentContentText}>{thePost.content}</Text>
+              {thePost.comments &&
+                thePost.comments.map((comment) => (
+                  <ChatComponent
+                    key={comment.comment_id}
+                    userName={comment.user_name}
+                    comment={comment.content}
+                  />
+                ))}
+              <Pressable
+                style={styles.modalCloseButton}
+                onPress={() => setViewModalVisible(false)}
               >
                 <Text style={styles.closeButtonText}>닫기</Text>
               </Pressable>
