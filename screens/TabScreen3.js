@@ -130,9 +130,9 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontWeight: "700",
-    fontSize: 13,
+    fontSize: 15,
     color: "#333",
-    marginBottom: 3,
+    marginBottom: 5,
   },
   comment: {
     fontSize: 14,
@@ -141,7 +141,48 @@ const styles = StyleSheet.create({
   commentContentText: {
     fontSize: 15,
     marginTop: 10,
-    marginBottom: 30,
+    marginBottom: 0,
+  },
+  inputContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  commentButton: {
+    backgroundColor: "#A5D699",
+    marginTop: 5,
+    marginBottom: 5,
+    padding: 10,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  commentInputField: {
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
+    borderRadius: 10,
+    width: 315,
+    padding: 8,
+    marginTop: 5,
+    marginBottom: 5,
+  },
+  viewModalCloseButton: {
+    marginTop: 18,
+    alignItems: "center",
+  },
+  likedButton: {
+    backgroundColor: "#A5D699",
+    padding: 5,
+    borderRadius: 10,
+    marginRight: 10,
+  },
+  likedButtonText: {
+    color: "white",
+    fontSize: 15,
+  },
+  unlikedButton: {
+    padding: 5,
+    borderRadius: 10,
+    marginRight: 10,
   },
 });
 
@@ -156,8 +197,9 @@ const TabHeader = ({ name, onPressPublish }) => (
   </View>
 );
 
-const ContentBox = ({ post, onView, onDelete, onUpdate }) => {
+const ContentBox = ({ post, onView, onDelete, onUpdate, onLike }) => {
   const isUserPost = post.author === userId;
+  const [isLiked, setIsLiked] = useState(false);
 
   const handleDelete = () => {
     // Confirm deletion before proceeding
@@ -178,30 +220,95 @@ const ContentBox = ({ post, onView, onDelete, onUpdate }) => {
     );
   };
 
+  const handleLike = () => {
+    setIsLiked(true);
+    onLike(post);
+  };
+
   return (
     <TouchableOpacity style={styles.box} onPress={() => onView(post)}>
       <Text style={styles.largeText}>{post.title}</Text>
       <Text style={styles.contentText}>{post.content}</Text>
-      {isUserPost && (
-        <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-          <TouchableOpacity onPress={() => onUpdate(post)}>
-            <Text style={{ color: "#808080", marginRight: 10 }}>수정</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleDelete}>
-            <Text style={{ color: "#808080" }}>삭제</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <View
+        style={{
+          marginTop: 5,
+          flexDirection: "row",
+          justifyContent: "flex-start",
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => handleLike()}
+          style={isLiked ? styles.likedButton : styles.unlikedButton}
+        >
+          <Text style={isLiked ? styles.likedButtonText : { color: "#808080" }}>
+            {post.like} 좋아요
+          </Text>
+        </TouchableOpacity>
+        {isUserPost && (
+          <>
+            <TouchableOpacity
+              onPress={() => onUpdate(post)}
+              style={{ marginLeft: "auto" }}
+            >
+              <Text style={{ color: "#808080", marginRight: 10, marginTop: 5 }}>
+                수정
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleDelete}>
+              <Text style={{ color: "#808080", marginTop: 5 }}>삭제</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
     </TouchableOpacity>
   );
 };
 
-const ChatComponent = ({ userName, comment }) => {
-  console.log(comment);
+const ChatComponent = ({
+  comment,
+  userName,
+  user_email,
+  content,
+  onDelete,
+}) => {
+  const isUserComment = user_email === userId;
+  const handleDelete = () => {
+    // Confirm deletion before proceeding
+    Alert.alert(
+      "삭제 확인",
+      "정말 삭제하시겠습니까?",
+      [
+        {
+          text: "취소",
+          style: "cancel",
+        },
+        {
+          text: "확인",
+          onPress: () => onDelete(comment),
+        },
+      ],
+      { cancelable: false }
+    );
+  };
   return (
     <View style={styles.commentContainer}>
-      <Text style={styles.userName}>{userName}</Text>
-      <Text style={styles.comment}>{comment}</Text>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Text style={styles.userName}>{userName}</Text>
+        {isUserComment && (
+          <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+            <TouchableOpacity onPress={handleDelete}>
+              <Text style={{ color: "#808080", marginTop: 0 }}>삭제</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+      <Text style={styles.comment}>{content}</Text>
     </View>
   );
 };
@@ -209,6 +316,8 @@ const ChatComponent = ({ userName, comment }) => {
 const TabScreen3 = () => {
   const [posts, setPosts] = useState([]);
   const [thePost, setThePost] = useState([]);
+  const [newComment, setNewComment] = useState("");
+  const [currentPostId, setCurrentPostId] = useState("");
   const [userData, setUserData] = useState({
     name: "",
     point: "",
@@ -243,7 +352,7 @@ const TabScreen3 = () => {
   const [isModifyModalVisible, setModifyModalVisible] = useState(false);
   const [isViewModalVisible, setViewModalVisible] = useState(false);
 
-  // Date formatting function
+  // 0. 날짜 포맷 함수
   const formatDate = (date) => {
     return `${date.getFullYear()}-${(date.getMonth() + 1)
       .toString()
@@ -285,7 +394,7 @@ const TabScreen3 = () => {
       });
       const data = await response.json();
       setThePost(data);
-      console.log(thePost);
+      setCurrentPostId(post.post_id);
       setViewModalVisible(true);
     } catch (error) {
       console.error(`Error fetching post ${post.post_id}:`, error);
@@ -404,7 +513,7 @@ const TabScreen3 = () => {
     setPublishModalVisible(true);
   };
 
-  // Fetch user data
+  // 7. 유저 정보를 조회하는 함수
   useEffect(() => {
     // Fetch posts when the component mounts
     const fetchData = async () => {
@@ -434,7 +543,7 @@ const TabScreen3 = () => {
     fetchData();
   }, []);
 
-  // 글 업데이트를 보조하는 함수
+  // 8. 글 업데이트를 보조하는 함수
   const handleUpdate = (post) => {
     setModifiedContent({
       author: post.author,
@@ -452,6 +561,121 @@ const TabScreen3 = () => {
     setModifyModalVisible(true);
   };
 
+  // 9. 댓글을 추가하는 함수
+  const addComment = async (newComment) => {
+    const comment = {
+      content: newComment,
+    };
+    console.log(currentPostId);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/post/${currentPostId}/comment`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${idToken}`,
+          },
+          body: JSON.stringify(comment),
+        }
+      );
+
+      if (response.ok) {
+        console.log("Comment added successfully");
+        setNewComment(""); // Clear the input field
+        setViewModalVisible(false); // Close the view modal
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/post/${currentPostId}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `${idToken}`,
+              },
+            }
+          );
+          const data = await response.json();
+          setThePost(data);
+          setViewModalVisible(true);
+        } catch (error) {
+          console.error(`Error fetching post ${currentPostId}:`, error);
+        }
+      } else {
+        console.error("Error adding comment:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error adding comment:", error);
+    }
+  };
+
+  // 10. 댓글을 삭제하는 함수
+  const deleteComment = async (comment) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/post/${currentPostId}/comment/${comment.comment_id}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${idToken}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        console.log("Comment deleted successfully");
+        setViewModalVisible(false); // Close the view modal
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/post/${currentPostId}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `${idToken}`,
+              },
+            }
+          );
+          const data = await response.json();
+          setThePost(data);
+          setViewModalVisible(true);
+        } catch (error) {
+          console.error(`Error fetching post ${currentPostId}:`, error);
+        }
+      } else {
+        console.error("Error deleting comment:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+    }
+  };
+
+  // 11. 글 좋아요를 추가하는 함수
+  const addLike = async (post) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/post/${post.post_id}/like`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${idToken}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        console.log("Like added successfully");
+        fetchPosts(); // Refresh the post list after like
+      } else {
+        console.error("Error adding like:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error adding like:", error);
+    }
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <TabHeader name="커뮤니티" onPressPublish={onPressPublish} />
@@ -466,6 +690,7 @@ const TabScreen3 = () => {
                 onView={fetchPostById}
                 onDelete={deletePost}
                 onUpdate={handleUpdate}
+                onLike={addLike}
               />
             ))}
         </ScrollView>
@@ -570,7 +795,7 @@ const TabScreen3 = () => {
         </Modal>
         {/* View Modal */}
         <Modal
-          animationType="slide"
+          animationType="fade"
           transparent={true}
           visible={isViewModalVisible}
           onRequestClose={() => setViewModalVisible(false)}
@@ -586,16 +811,35 @@ const TabScreen3 = () => {
             <View style={styles.modalContent}>
               <Text style={styles.largeText}>{thePost.title}</Text>
               <Text style={styles.commentContentText}>{thePost.content}</Text>
-              {thePost.comments &&
-                thePost.comments.map((comment) => (
-                  <ChatComponent
-                    key={comment.comment_id}
-                    userName={comment.user_name}
-                    comment={comment.content}
-                  />
-                ))}
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={styles.commentInputField}
+                  placeholder="댓글을 입력하세요..."
+                  onChangeText={(text) => setNewComment(text)}
+                />
+                <Pressable
+                  style={styles.commentButton}
+                  onPress={() => addComment(newComment)}
+                >
+                  <Text style={styles.editButtonText}>게시</Text>
+                </Pressable>
+              </View>
+              <ScrollView style={{ height: 470 }}>
+                {thePost.comments &&
+                  thePost.comments.map((comment) => (
+                    <ChatComponent
+                      comment_id={comment.comment_id}
+                      key={comment.comment_id}
+                      userName={comment.user_name}
+                      user_email={comment.user_email}
+                      content={comment.content}
+                      onDelete={() => deleteComment(comment)}
+                    />
+                  ))}
+              </ScrollView>
+
               <Pressable
-                style={styles.modalCloseButton}
+                style={styles.viewModalCloseButton}
                 onPress={() => setViewModalVisible(false)}
               >
                 <Text style={styles.closeButtonText}>닫기</Text>

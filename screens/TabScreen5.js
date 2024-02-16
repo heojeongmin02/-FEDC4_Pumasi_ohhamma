@@ -269,11 +269,10 @@ const TabScreen5 = () => {
           }
         );
 
-        console.log(response);
-
         if (response.ok) {
           const result = await response.json();
           setCareData(result);
+          console.log(result);
         } else {
           console.error("Error fetching care data:", response.statusText);
         }
