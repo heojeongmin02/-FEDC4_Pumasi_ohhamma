@@ -1,6 +1,6 @@
 // TabScreen4.js
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { createAppContainer } from "react-navigation";
 import { createStackNavigator } from "react-navigation-stack";
@@ -44,8 +44,10 @@ const TabHeader = ({ name }) => (
   </View>
 );
 
-const ChatListScreen = ({ navigation }) => {
-  const [chatRooms, setChatRooms] = React.useState([]);
+const ChatListScreen = ({ route, navigation }) => {
+  const inviteUserEmail = route?.params?.inviteUserEmail;
+  //const inviteUserEmail = route.params.inviteUserEmail;
+  const [chatRooms, setChatRooms] = useState([]);
 
   const createChatRoom = async (inviteUserEmail) => {
     try {
@@ -61,35 +63,49 @@ const ChatListScreen = ({ navigation }) => {
       if (response.status === 201) {
         const responseData = await response.json();
         const roomId = responseData.room_id;
+        const roomName = responseData.roomName;
+        // responseData.roomName의 roomName 서버에서 지정한 이름으로 바꿀 것 !!!!
+        return roomId, roomName;
       } else {
-        console.error("Failed to create chat room:", response.status);
+        console.error("채팅방 생성 실패:", response.status);
       }
     } catch (error) {
-      console.error("Error creating chat room:", error.message);
+      console.error("채팅방 생성 중 오류:", error.message);
     }
   };
+
+  useEffect(() => {
+    const fetchAndCreateChatRoom = async () => {
+      if (inviteUserEmail) {
+        await createChatRoom(inviteUserEmail);
+      }
+      await fetchChatRooms();
+    };
+
+    fetchAndCreateChatRoom();
+  }, [inviteUserEmail]);
 
   const fetchChatRooms = async () => {
     try {
       const response = await fetch("http://pumasi.everdu.com/chat/list", {
         method: "GET",
         headers: {
-          // 인증 헤더
+          Authorization: `${idToken}`,
         },
       });
 
-      if (!response.ok) {
-        throw new Error("채팅방을 불러오는 데 실패했습니다");
+      if (response.ok) {
+        const fetchedChatRooms = await response.json();
+        setChatRooms(fetchedChatRooms);
+      } else {
+        throw new Error("채팅방 불러오기 실패");
       }
-
-      const fetchedChatRooms = await response.json();
-      setChatRooms(fetchedChatRooms);
     } catch (error) {
-      console.error("채팅방을 불러오는 중 오류 발생:", error.message);
+      console.error("채팅방 불러오기 중 오류:", error.message);
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchChatRooms();
   }, []);
 
@@ -101,7 +117,8 @@ const ChatListScreen = ({ navigation }) => {
     <View style={[styles.container, { backgroundColor: "white" }]}>
       <FlatList
         data={chatRooms}
-        keyExtractor={(item) => item.id.toString()}
+        // keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item, index) => item.id || index.toString()}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.chatItem}
@@ -116,40 +133,58 @@ const ChatListScreen = ({ navigation }) => {
 };
 
 const ChatRoomScreen = ({ navigation }) => {
-  const [messages, setMessages] = React.useState([]);
+  const [messages, setMessages] = useState([]);
   const roomId = navigation.getParam("roomId", 0);
+  const roomName = navigation.getParam("roomName", "채팅방");
 
   const fetchMessages = async () => {
     try {
       const response = await fetch(`http://pumasi.everdu.com/chat/${roomId}`, {
         method: "GET",
         headers: {
-          // 인증 헤더
+          Authorization: `${idToken}`,
         },
       });
 
-      if (!response.ok) {
-        throw new Error("메시지를 불러오는 데 실패했습니다");
+      if (response.ok) {
+        const fetchedMessages = await response.json();
+        setMessages(fetchedMessages);
+      } else {
+        throw new Error("메시지 불러오기 실패");
       }
-
-      const fetchedMessages = await response.json();
-      setMessages(fetchedMessages);
     } catch (error) {
-      console.error("메시지를 불러오는 중 오류 발생:", error.message);
+      console.error("메시지 불러오기 중 오류:", error.message);
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchMessages();
-  }, []);
+  }, [roomId, idToken]);
+
+  // const fetchMessagesPeriodically = async () => {
+  //   await fetchMessages();
+
+  //   const intervalId = setInterval(async () => {
+  //     await fetchMessages();
+  //   }, 10000); // 10초
+
+  //   // clearInterval 호출하여 중단
+  //   return () => {
+  //     clearInterval(intervalId);
+  //   };
+  // };
+
+  // useEffect(() => {
+  //   fetchMessagesPeriodically();
+  // }, [roomId, idToken]);
 
   const onSend = async (newMessages = []) => {
     try {
-      await fetch(`http://pumasi.everdu.com/chat/${roomId}/message`, {
+      await fetch(`http://pumasi.everdu.com/chat/${roomId}/message/`, {
         method: "POST",
         headers: {
-          // 인증 헤더
           "Content-Type": "application/json",
+          Authorization: `${idToken}`,
         },
         body: JSON.stringify({ message: newMessages[0].text }),
       });
@@ -158,7 +193,7 @@ const ChatRoomScreen = ({ navigation }) => {
         GiftedChat.append(prevMessages, newMessages)
       );
     } catch (error) {
-      console.error("메시지를 전송하는 중 오류 발생:", error.message);
+      console.error("메시지 전송 중 오류:", error.message);
     }
   };
 
