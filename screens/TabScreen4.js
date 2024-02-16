@@ -64,6 +64,7 @@ const ChatListScreen = ({ route, navigation }) => {
         const responseData = await response.json();
         const roomId = responseData.room_id;
         const roomName = responseData.roomName;
+        // responseData.roomName의 roomName 서버에서 지정한 이름으로 바꿀 것 !!!!
         return roomId, roomName;
       } else {
         console.error("채팅방 생성 실패:", response.status);
