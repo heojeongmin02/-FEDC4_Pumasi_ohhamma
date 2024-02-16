@@ -11,8 +11,11 @@ import {
   Modal,
   Platform,
   Pressable,
+  Button,
 } from "react-native";
+import { Rating } from "react-native-ratings";
 import { idToken, userId } from "./LoginScreen";
+import { width } from "deprecated-react-native-prop-types/DeprecatedImagePropType";
 
 const styles = StyleSheet.create({
   tabHeader: {
@@ -90,9 +93,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.3)", // 배경을 흐리게 표현하기 위한 rgba 값},
   },
   modalContent: {
-    width: "80%", // 모달의 너비를 80%로 설정
+    width: "95%", // 모달의 너비를 80%로 설정
     backgroundColor: "#fff",
     padding: 20,
     borderRadius: 10,
@@ -138,8 +142,57 @@ const styles = StyleSheet.create({
   androidShadow: {
     elevation: 5,
   },
+  largeText2: {
+    fontSize: 25,
+    marginTop: 20,
+    marginLeft: 20,
+  },
+  deleteButton: {
+    backgroundColor: "#cd5c5c",
+    marginTop: 10,
+    marginBottom: 5,
+    padding: 17,
+    borderRadius: 15,
+    width: "30%",
+    alignItems: "center",
+  },
+  realEditButton: {
+    backgroundColor: "#A5D699",
+    marginTop: 10,
+    marginBottom: 5,
+    padding: 17,
+    borderRadius: 15,
+    width: "68%",
+    alignItems: "center",
+  },
 });
 
+// 시간을 24시간 형식으로 변환하는 함수
+const formatTime = (time) => {
+  const hours = Math.floor(time / 100);
+  const minutes = time % 100;
+  return `${hours < 10 ? "0" : ""}${hours}:${
+    minutes < 10 ? "0" : ""
+  }${minutes}`;
+};
+
+// 날짜를 한글 요일을 포함한 형식으로 변환하는 함수
+const formatDate = (dateString) => {
+  const year = dateString.substring(0, 4);
+  const monthDay = dateString.substring(4);
+  const month = parseInt(monthDay.substring(0, 2), 10);
+  const day = parseInt(monthDay.substring(2), 10);
+
+  // JavaScript에서 월은 0부터 시작하므로 1을 더해줍니다.
+  const formattedDate = new Date(`${year}-${month}-${day}`);
+  const options = { weekday: "long" }; // 'long' 옵션을 통해 긴 형식의 요일을 가져옵니다.
+  const dayOfWeek = new Intl.DateTimeFormat("ko-KR", options).format(
+    formattedDate
+  );
+  return `${month}월 ${day}일 ${dayOfWeek}`;
+};
+
+// 탭헤더 컴포넌트
 const TabHeader = ({ name }) => (
   <View style={styles.tabHeader}>
     <Text style={styles.tabHeaderText}>{name}</Text>
@@ -173,9 +226,8 @@ const TabScreen5 = () => {
   const [careData, setCareData] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // 기능: 아이를 추가했을때 서버에도 반영하고, 서버 반영을 성공하면 로컬에도 적용함
-  const handleAddChild = () => {
-    console.log(newChildData);
+  // 아이 추가 버튼을 눌렀을 때 호출되는 함수
+  const handleAddChild = async () => {
     if (
       newChildData.name &&
       newChildData.gender &&
@@ -184,49 +236,33 @@ const TabScreen5 = () => {
       newChildData.blood_type &&
       newChildData.notes
     ) {
-      fetch(`http://pumasi.everdu.com/user/${userId}/child`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `${idToken}`,
-        },
-        body: JSON.stringify(newChildData),
-      })
-        .then((response) => {
-          // HTTP 상태 코드 확인
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+      try {
+        const response = await fetch(
+          `http://pumasi.everdu.com/user/${userId}/child`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `${idToken}`,
+            },
+            body: JSON.stringify(newChildData),
           }
-          return response.json();
-        })
-        .then((data) => {
-          // 서버 응답이 JSON 형식인 경우
-          console.log(data);
-          if (data.success) {
-            setChildData((prevData) => [...prevData, { ...newChildData }]);
-            setNewChildData({
-              name: "",
-              gender: "",
-              age: "",
-              allergies: "",
-              blood_type: "",
-              notes: "",
-            });
-            setModalVisible(false);
-          } else {
-            alert("서버 응답이 올바르지 않습니다.");
-          }
-        })
-        .catch((error) => {
-          // 서버 응답이 JSON 형식이 아닌 경우 또는 네트워크 오류 등
-          console.error("Error:", error);
-          alert("서버 응답이 올바르지 않습니다.");
-        });
-    } else {
-      alert("모든 필드를 입력해주세요.");
+        );
+
+        if (response.ok) {
+          console.log("Child added successfully");
+          fetchChildData();
+          setModalVisible(false);
+        } else {
+          console.error("Error adding child:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error adding child:", error);
+      }
     }
   };
 
+  // 유저 정보를 가져오는 useEffect
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -255,6 +291,7 @@ const TabScreen5 = () => {
     fetchData();
   }, []);
 
+  // 맡기기 정보를 가져오는 useEffect
   useEffect(() => {
     const fetchCareData = async () => {
       try {
@@ -272,7 +309,6 @@ const TabScreen5 = () => {
         if (response.ok) {
           const result = await response.json();
           setCareData(result);
-          console.log(result);
         } else {
           console.error("Error fetching care data:", response.statusText);
         }
@@ -284,34 +320,37 @@ const TabScreen5 = () => {
     fetchCareData();
   }, []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(
-          `http://pumasi.everdu.com/user/${userId}/child`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `${idToken}`,
-            },
-          }
-        );
-
-        if (response.ok) {
-          const result = await response.json();
-          setChildData(result);
-        } else {
-          console.error("Error fetching data:", response.statusText);
+  // 아이 정보를 가져오는 함수
+  const fetchChildData = async () => {
+    try {
+      const response = await fetch(
+        `http://pumasi.everdu.com/user/${userId}/child`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${idToken}`,
+          },
         }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
+      );
 
-    fetchData();
+      if (response.ok) {
+        const result = await response.json();
+        setChildData(result);
+      } else {
+        console.error("Error fetching data:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  // fetchChildData 함수를 호출하는 useEffect
+  useEffect(() => {
+    fetchChildData();
   }, []);
 
+  // 유저 정보 컴포넌트
   const UserContentBox = ({ content }) => {
     const [isClicked, setIsClicked] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -389,49 +428,83 @@ const TabScreen5 = () => {
     );
   };
 
+  // 아이 정보 컴포넌트
   const ChildContentBox = ({ content }) => {
     const [isClicked, setIsClicked] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editedChildData, setEditedChildData] = useState({
-      name: content.name,
       allergies: content.allergies,
-      blood_type: content.blood_type,
       notes: content.notes,
     });
 
-    const handleContentBoxClick = () => {
-      setIsClicked(!isClicked);
-    };
-
+    // 저장 버튼을 눌렀을 때 호출되는 함수
     const handleSavePress = () => {
       setIsEditing(false);
-
-      setChildData((prevData) => {
-        return prevData.map((child) => {
-          if (child.name === editedChildData.name) {
-            // name이 일치하는 경우 아이템 업데이트
-            return {
-              ...child,
-              allergies: editedChildData.allergies,
-              blood_type: editedChildData.blood_type,
-              notes: editedChildData.notes,
-            };
+      fetch(
+        `http://pumasi.everdu.com/user/${userId}/child/${content.child_id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${idToken}`,
+          },
+          body: JSON.stringify(editedChildData),
+        }
+      )
+        .then((response) => {
+          if (response.ok) {
+            console.log("Child updated successfully");
+            fetchChildData();
           } else {
-            return child; // 아이템을 찾지 못하면 원래의 값을 그대로 유지
+            console.error("Error updating child:", response.statusText);
           }
+        })
+        .catch((error) => {
+          console.error("Error updating child:", error);
         });
-      });
     };
 
-    const handleEditPress = () => {
-      // 여기에 편집 모드 전환 동작 구현
-      setIsEditing(true);
+    // 아이 삭제 버튼을 눌렀을 때 호출되는 함수
+    const handleDeletePress = () => {
+      fetch(
+        `http://pumasi.everdu.com/user/${userId}/child/${content.child_id}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${idToken}`,
+          },
+        }
+      )
+        .then((response) => {
+          console.log(response);
+          if (response.ok) {
+            console.log("Child deleted successfully");
+            fetchChildData();
+          } else {
+            console.error("Error deleting child:", response.statusText);
+          }
+        })
+        .catch((error) => {
+          console.error("Error deleting child:", error);
+        });
+    };
+
+    // 나이 계산 함수
+    const calculateAge = (birthYear) => {
+      const currentYear = new Date().getFullYear();
+      return currentYear - birthYear;
     };
 
     return (
-      <TouchableOpacity style={styles.box} onPress={handleContentBoxClick}>
+      <TouchableOpacity
+        style={styles.box}
+        onPress={() => setIsClicked(!isClicked)}
+      >
         <Text style={styles.largeText}>{content.name}</Text>
-        <Text style={styles.contentText}>나이: {content.age}</Text>
+        <Text style={styles.contentText}>
+          나이: {calculateAge(content.age)}세
+        </Text>
         <Text style={styles.contentText}>
           성별: {content.gender === `m` ? `남아` : `여아`}
         </Text>
@@ -443,7 +516,7 @@ const TabScreen5 = () => {
             <>
               <TextInput
                 style={styles.inputBox}
-                placeholder="새 알러지"
+                placeholder="알러지"
                 value={editedChildData.allergies}
                 onChangeText={(text) =>
                   setEditedChildData((prevData) => ({
@@ -454,18 +527,18 @@ const TabScreen5 = () => {
               />
               <TextInput
                 style={styles.inputBox}
-                placeholder="새 혈액형"
+                placeholder="혈액형"
                 value={editedChildData.blood_type}
-                onChangeText={(text) =>
-                  setEditedChildData((prevData) => ({
-                    ...prevData,
-                    blood_type: text,
-                  }))
-                }
+                // onChangeText={(text) =>
+                //   setEditedChildData((prevData) => ({
+                //     ...prevData,
+                //     blood_type: text,
+                //   }))
+                // }
               />
               <TextInput
                 style={styles.inputBox}
-                placeholder="새 주의사항"
+                placeholder="주의사항"
                 value={editedChildData.notes}
                 onChangeText={(text) =>
                   setEditedChildData((prevData) => ({
@@ -482,26 +555,132 @@ const TabScreen5 = () => {
               </TouchableOpacity>
             </>
           ) : (
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={handleEditPress}
+            <View
+              style={{ flexDirection: "row", justifyContent: "space-between" }}
             >
-              <Text style={styles.editButtonText}>편집</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.realEditButton}
+                onPress={() => setIsEditing(true)}
+              >
+                <Text style={styles.editButtonText}>편집</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={handleDeletePress}
+              >
+                <Text style={styles.editButtonText}>삭제</Text>
+              </TouchableOpacity>
+            </View>
           ))}
       </TouchableOpacity>
     );
   };
 
+  // 맡기기 정보 컴포넌트
   const CareContentBox = ({ content }) => {
-    // 맡기기 정보에 대한 렌더링 로직 추가
+    const [isClicked, setIsClicked] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [review, setReview] = useState("");
+    const [rating, setRating] = useState(0);
+
+    const handleDoneAndRate = () => {
+      setIsClicked(!isClicked);
+      setModalVisible(true);
+    };
+
+    const handleSubmitReview = () => {
+      // 평점과 리뷰를 서버에 전송하는 코드를 여기에 작성하세요.
+      console.log(`Rating: ${rating}, Review: ${review}`);
+      setModalVisible(false);
+
+      fetch(`http://pumasi.everdu.com/care/${userId}/care/complete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `${idToken}`,
+        },
+        body: JSON.stringify({ rating, point: 200 }),
+      })
+        .then((response) => {
+          console.log(response);
+          if (response.ok) {
+            console.log("Review submitted successfully");
+          } else {
+            console.error("Error submitting review:", response.statusText);
+          }
+        })
+        .catch((error) => {
+          console.error("Error submitting review:", error);
+        });
+    };
+
     return (
-      <TouchableOpacity style={styles.box}>
-        {/* 맡기기 정보에 대한 텍스트 또는 컴포넌트 렌더링 */}
-        {/* 예시로 간단한 텍스트를 표시하도록 하였습니다. 실제 데이터에 따라 수정이 필요합니다. */}
-        <Text style={styles.largeText}>{content.careName}</Text>
-        <Text style={styles.contentText}>맡긴 날짜: {content.startDate}</Text>
-        <Text style={styles.contentText}>받은 날짜: {content.endDate}</Text>
+      <TouchableOpacity
+        style={styles.box}
+        onPress={() => setIsClicked(!isClicked)}
+      >
+        <Text style={styles.largeText}>{formatDate(content.date)}</Text>
+        <Text style={styles.contentText}>
+          {`${formatTime(content.start_time)} 부터 ${formatTime(
+            content.end_time
+          )} 까지 ${content.email}님에게`}
+        </Text>
+        <Text style={styles.contentText}>주소: {content.address}</Text>
+        {isClicked && (
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={handleDoneAndRate}
+          >
+            <Text style={styles.editButtonText}>완료 및 평점 남기기</Text>
+          </TouchableOpacity>
+        )}
+
+        <Modal animationType="fade" transparent={true} visible={modalVisible}>
+          <View
+            style={[
+              styles.modalContainer,
+              Platform.OS === "android"
+                ? styles.androidShadow
+                : styles.iosShadow,
+            ]}
+          >
+            <View style={styles.modalContent}>
+              <Rating
+                type="star"
+                ratingCount={5}
+                imageSize={40}
+                showRating
+                onFinishRating={(rating) => setRating(rating)}
+              />
+              <TextInput
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#E6E6E6",
+                  borderRadius: 10,
+                  padding: 8,
+                  marginTop: 30,
+                  marginBottom: 5,
+                  height: 50,
+                }}
+                placeholder="리뷰를 입력해주세요"
+                multiline
+                onChangeText={(text) => setReview(text)}
+              />
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={handleSubmitReview}
+              >
+                <Text style={styles.editButtonText}>확인</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => handleSubmitReview()}
+              >
+                <Text style={styles.closeButtonText}>닫기</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </TouchableOpacity>
     );
   };
@@ -511,11 +690,9 @@ const TabScreen5 = () => {
       <TabHeader name="마이페이지" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <UserContentBox content={userData} />
+        <Text style={styles.largeText2}>자녀 정보</Text>
         {childData.map((child, index) => (
           <ChildContentBox key={index} content={child} />
-        ))}
-        {careData.map((care, index) => (
-          <CareContentBox key={index} content={care} />
         ))}
         <TouchableOpacity
           style={styles.addChildButtonText}
@@ -523,9 +700,14 @@ const TabScreen5 = () => {
         >
           <Text style={styles.editButtonText}>아이 추가</Text>
         </TouchableOpacity>
+        <Text style={styles.largeText2}>예정된 맡기기 일정</Text>
+        {careData.map((care, index) => (
+          <CareContentBox key={index} content={care} />
+        ))}
       </ScrollView>
+      {/* 아이 추가 팝업 */}
       <Modal
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => {

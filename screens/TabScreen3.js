@@ -72,6 +72,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
     width: "95%",
@@ -91,6 +92,15 @@ const styles = StyleSheet.create({
     padding: 8,
     marginTop: 5,
     marginBottom: 5,
+  },
+  largeInputField: {
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
+    borderRadius: 10,
+    padding: 8,
+    marginTop: 5,
+    marginBottom: 5,
+    height: 70,
   },
   closeButtonText: {
     color: "#D5D5D5",
@@ -150,7 +160,7 @@ const styles = StyleSheet.create({
   },
   commentButton: {
     backgroundColor: "#A5D699",
-    marginTop: 5,
+    marginTop: 10,
     marginBottom: 5,
     padding: 10,
     borderRadius: 10,
@@ -162,7 +172,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     width: 315,
     padding: 8,
-    marginTop: 5,
+    marginTop: 10,
     marginBottom: 5,
   },
   viewModalCloseButton: {
@@ -697,7 +707,7 @@ const TabScreen3 = () => {
 
         {/* Publish Modal */}
         <Modal
-          animationType="slide"
+          animationType="fade"
           transparent={true}
           visible={isPublishModalVisible}
           onRequestClose={() => setPublishModalVisible(false)}
@@ -720,7 +730,7 @@ const TabScreen3 = () => {
                 }
               />
               <TextInput
-                style={styles.inputField}
+                style={styles.largeInputField}
                 placeholder="글의 내용"
                 multiline
                 value={newPostContent.content}
@@ -746,7 +756,7 @@ const TabScreen3 = () => {
         </Modal>
         {/* Modify Modal */}
         <Modal
-          animationType="slide"
+          animationType="fade"
           transparent={true}
           visible={isModifyModalVisible}
           onRequestClose={() => setModifyModalVisible(false)}
