@@ -1,6 +1,6 @@
 // TabScreen2.js
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   View,
   Text,
@@ -9,12 +9,15 @@ import {
   StyleSheet,
   TextInput,
   Alert,
+  Modal,
+  Platform,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import MultiSlider from "@ptomasroos/react-native-multi-slider";
-import { idToken } from "./LoginScreen";
+import { idToken, userId } from "./LoginScreen";
+import { PostContext } from "./PostContext";
 
 const styles = StyleSheet.create({
   container: {
@@ -75,6 +78,29 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
   },
+  box: {
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingTop: 10,
+    paddingBottom: 10,
+    marginTop: 15,
+    marginHorizontal: 15,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.3)", // 배경을 흐리게 표현하기 위한 rgba 값},
+  },
+  modalContent: {
+    width: "95%", // 모달의 너비를 80%로 설정
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 10,
+    elevation: 5,
+  },
   darkgrayText: {
     fontSize: 18,
     color: "#616161",
@@ -86,6 +112,39 @@ const styles = StyleSheet.create({
   whiteText: {
     fontSize: 18,
     color: "#ffffff",
+  },
+  largeText: {
+    fontSize: 25,
+    marginTop: 3,
+    marginBottom: 6,
+  },
+  largeText2: {
+    fontSize: 25,
+    marginVertical: 10,
+    marginHorizontal: 15,
+  },
+  iosShadow: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+  },
+  androidShadow: {
+    elevation: 5,
+  },
+  modalCloseButton: {
+    marginTop: 10,
+    alignItems: "center",
+  },
+  closeButtonText: {
+    color: "#D5D5D5",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  contentText: {
+    fontSize: 15,
+    marginTop: 5,
+    marginBottom: 3,
   },
   contentContainer: {
     marginVertical: 10,
@@ -106,7 +165,7 @@ const TabScreen2 = ({ navigation }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedStartTime, setSelectedStartTime] = useState(new Date());
   const [selectedEndTime, setSelectedEndTime] = useState(new Date());
-  const [selectedPlace, setSelectedPlace] = useState("서울특별시 마포구");
+  const [selectedPlace, setSelectedPlace] = useState("");
   const [detailedAddress, setDetailedAddress] = useState("");
   const [region, setRegion] = useState(null);
   const [selectedAgeRange, setSelectedAgeRange] = useState([1, 19]);
@@ -123,13 +182,9 @@ const TabScreen2 = ({ navigation }) => {
   const [isDetailedAddressEntered, setIsDetailedAddressEntered] =
     useState(false);
 
-  const [isPostSubmitted, setIsPostSubmitted] = useState(false);
-  const [responseData, setResponseData] = useState(null);
-  const handleTogglePress = () => {
-    setShowDatePicker(!showDatePicker);
-    setShowStartTimePicker(false);
-    setShowEndTimePicker(false);
-  };
+  const { isPostSubmitted, setIsPostSubmitted, responseData, setResponseData } =
+    useContext(PostContext);
+  //const [responseData, setResponseData] = useState(null);
 
   const handleDateChange = (event, date) => {
     setShowDatePicker(false);
@@ -242,6 +297,41 @@ const TabScreen2 = ({ navigation }) => {
     return "both";
   };
 
+  // 사용자 정보를 상태로 관리
+  const [userInfo, setUserInfo] = useState({
+    rating: "",
+    address: "",
+    email: "",
+  });
+
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const response = await fetch(
+          `http://pumasi.everdu.com/care/${userId}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `${idToken}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const fetchedUserInfo = await response.json();
+          setUserInfo(fetchedUserInfo);
+        } else {
+          console.error("서버 응답 오류1:", response.status);
+        }
+      } catch (error) {
+        console.error("데이터 가져오는 중 오류:", error);
+      }
+    };
+
+    fetchUserInfo();
+  }, []); // userId가 변경될 때마다 사용자 정보를 다시 불러옴
+
   const handlePostData = async () => {
     const postData = {
       date: formatDate(selectedDate),
@@ -249,9 +339,11 @@ const TabScreen2 = ({ navigation }) => {
       end_time: formatTime(selectedEndTime),
       child_age_from: formatAge(selectedAgeRange[0]),
       child_age_to: formatAge(selectedAgeRange[1]),
-      rating: 4.2, // 일단은
-      address: selectedPlace + " " + detailedAddress,
-      email: "test2@example.com", // 일단은
+      rating: userInfo.rating,
+      address: isPlaceBoxSelected
+        ? selectedPlace + " " + detailedAddress
+        : userInfo.address + " " + detailedAddress,
+      email: userInfo.email,
       gender: formatGender(),
     };
 
@@ -275,7 +367,7 @@ const TabScreen2 = ({ navigation }) => {
         Alert.alert("게시하기", "게시 성공!");
         setIsPostSubmitted(true);
       } else {
-        console.error("서버 응답 오류:", response.status);
+        console.error("서버 응답 오류2:", response.status);
         Alert.alert("게시하기", "게시 실패. 서버 응답 오류 발생!");
       }
     } catch (error) {
@@ -299,6 +391,21 @@ const TabScreen2 = ({ navigation }) => {
     return `${year}년 ${month}월 ${day}일 ${dayOfWeek}`;
   };
 
+  const formatDateString2 = (dateString) => {
+    const year = dateString.substring(0, 4);
+    const monthDay = dateString.substring(4);
+    const month = parseInt(monthDay.substring(0, 2), 10);
+    const day = parseInt(monthDay.substring(2), 10);
+
+    const formattedDate = new Date(`${year}-${month}-${day}`);
+    const options = { weekday: "long" };
+    const dayOfWeek = new Intl.DateTimeFormat("ko-KR", options).format(
+      formattedDate
+    );
+
+    return `${month}월 ${day}일 ${dayOfWeek}`;
+  };
+
   const formatTimeString = (time) => {
     const hours = Math.floor(time / 100);
     const minutes = time % 100;
@@ -307,128 +414,215 @@ const TabScreen2 = ({ navigation }) => {
     }${minutes}분`;
   };
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: "white" }]}>
       <View style={styles.tabHeader}>
         <Text style={styles.tabHeaderText}>맡기</Text>
       </View>
       <View style={{ marginVertical: 5 }} />
-      {isPostSubmitted ? (
-        <ScrollView>
-          <View style={styles.contentContainer}>
-            <Text style={styles.subtitle}>맡을 날짜를 선택해주세요</Text>
-            <View style={styles.toggleContainer}>
-              <View style={styles.toggleButton2}>
-                <Text style={styles.middlegrayText}>
-                  {formatDateString(responseData.date)}
-                </Text>
-              </View>
-            </View>
-          </View>
+      {isPostSubmitted && responseData ? (
+        responseData.status === "reserved" ? (
+          // 맡기 일정
+          <ScrollView>
+            <Text style={styles.largeText2}>예정된 맡기 일정</Text>
+            <TouchableOpacity style={styles.box} onPress={handleOpenModal}>
+              <Text style={styles.largeText}>
+                {formatDateString2(responseData.date)}
+              </Text>
+              <Text style={styles.contentText}>
+                {`${formatTimeString(
+                  responseData.start_time
+                )} 부터 ${formatTimeString(responseData.end_time)} 까지`}
+              </Text>
+              <Text style={styles.contentText}>
+                {responseData.address}에서 맡기 일정이 있어요 {":)"}
+              </Text>
 
-          <View style={styles.contentContainer}>
-            <Text style={styles.subtitle}>맡을 시간을 선택해주세요</Text>
-
-            <View style={styles.toggleContainer}>
-              <View style={styles.toggleButton2}>
-                <Text style={styles.middlegrayText}>
-                  {formatTimeString(responseData.start_time)}
-                </Text>
-              </View>
-
-              <View style={styles.textBox}>
-                <Text style={styles.middlegrayText}>부터</Text>
-              </View>
-
-              <View style={styles.toggleButton2}>
-                <Text style={styles.middlegrayText}>
-                  {formatTimeString(responseData.end_time)}
-                </Text>
-              </View>
-              <View style={styles.textBox}>
-                <Text style={styles.middlegrayText}>까지</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.contentContainer}>
-            <Text style={styles.subtitle}>맡을 장소를 선택해주세요</Text>
-            <View style={styles.toggleContainer}>
-              <View style={styles.toggleButton2}>
-                <Text style={styles.middlegrayText}>
-                  {responseData.address}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.contentContainer}>
-            <Text style={styles.subtitle}>맡을 성별을 선택해주세요</Text>
-            <View style={styles.toggleContainer}>
-              {responseData.gender === "m" && (
-                <View style={styles.toggleButton2}>
-                  <Text style={styles.middlegrayText}>남자</Text>
+              <Modal
+                animationType="fade"
+                transparent={true}
+                visible={isModalOpen}
+                onRequestClose={handleCloseModal}
+              >
+                <View
+                  style={[
+                    styles.modalContainer,
+                    Platform.OS === "android"
+                      ? styles.androidShadow
+                      : styles.iosShadow,
+                  ]}
+                >
+                  <View style={styles.modalContent}>
+                    <Text style={styles.largeText}>
+                      {formatDateString2(responseData.date)}
+                    </Text>
+                    <Text style={styles.contentText}>
+                      시간:{" "}
+                      {`${formatTimeString(
+                        responseData.start_time
+                      )} 부터 ${formatTimeString(responseData.end_time)} 까지`}
+                    </Text>
+                    <Text style={styles.contentText}>
+                      주소: {responseData.address}
+                    </Text>
+                    <Text style={styles.contentText}>
+                      성별:{" "}
+                      {responseData.gender === "m" && (
+                        <Text style={styles.contentText}>남아</Text>
+                      )}
+                      {responseData.gender === "f" && (
+                        <Text style={styles.contentText}>여아</Text>
+                      )}
+                      {responseData.gender === "both" && (
+                        <Text style={styles.contentText}>남아, 여아</Text>
+                      )}
+                    </Text>
+                    <Text style={styles.contentText}>
+                      나이:{" "}
+                      {`${
+                        new Date().getFullYear() - responseData.child_age_from
+                      }세 부터 ${
+                        new Date().getFullYear() - responseData.child_age_to
+                      }세 까지`}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.modalCloseButton}
+                      onPress={handleCloseModal}
+                    >
+                      <Text style={styles.closeButtonText}>닫기</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              )}
-              {responseData.gender === "f" && (
+              </Modal>
+            </TouchableOpacity>
+          </ScrollView>
+        ) : (
+          <ScrollView>
+            <View style={styles.contentContainer}>
+              <Text style={styles.subtitle}>맡을 날짜를 선택해주세요</Text>
+              <View style={styles.toggleContainer}>
                 <View style={styles.toggleButton2}>
-                  <Text style={styles.middlegrayText}>여자</Text>
+                  <Text style={styles.middlegrayText}>
+                    {formatDateString(responseData.date)}
+                  </Text>
                 </View>
-              )}
-              {responseData.gender === "both" && (
-                <>
+              </View>
+            </View>
+
+            <View style={styles.contentContainer}>
+              <Text style={styles.subtitle}>맡을 시간을 선택해주세요</Text>
+
+              <View style={styles.toggleContainer}>
+                <View style={styles.toggleButton2}>
+                  <Text style={styles.middlegrayText}>
+                    {formatTimeString(responseData.start_time)}
+                  </Text>
+                </View>
+
+                <View style={styles.textBox}>
+                  <Text style={styles.middlegrayText}>부터</Text>
+                </View>
+
+                <View style={styles.toggleButton2}>
+                  <Text style={styles.middlegrayText}>
+                    {formatTimeString(responseData.end_time)}
+                  </Text>
+                </View>
+                <View style={styles.textBox}>
+                  <Text style={styles.middlegrayText}>까지</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.contentContainer}>
+              <Text style={styles.subtitle}>맡을 장소를 선택해주세요</Text>
+              <View style={styles.toggleContainer}>
+                <View style={styles.toggleButton2}>
+                  <Text style={styles.middlegrayText}>
+                    {responseData.address}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.contentContainer}>
+              <Text style={styles.subtitle}>맡을 성별을 선택해주세요</Text>
+              <View style={styles.toggleContainer}>
+                {responseData.gender === "m" && (
                   <View style={styles.toggleButton2}>
                     <Text style={styles.middlegrayText}>남자</Text>
                   </View>
-                  <View style={{ marginHorizontal: 10 }} />
+                )}
+                {responseData.gender === "f" && (
                   <View style={styles.toggleButton2}>
                     <Text style={styles.middlegrayText}>여자</Text>
                   </View>
-                </>
-              )}
-            </View>
-          </View>
-
-          <View style={styles.contentContainer}>
-            <Text style={styles.subtitle}>맡을 나이를 선택해주세요</Text>
-
-            <View style={styles.toggleContainer}>
-              <View style={styles.toggleButton2}>
-                <Text style={styles.middlegrayText}>
-                  {new Date().getFullYear() - responseData.child_age_from}세
-                </Text>
-              </View>
-
-              <View style={styles.textBox}>
-                <Text style={styles.middlegrayText}>부터</Text>
-              </View>
-
-              <View style={styles.toggleButton2}>
-                <Text style={styles.middlegrayText}>
-                  {new Date().getFullYear() - responseData.child_age_to}세
-                </Text>
-              </View>
-              <View style={styles.textBox}>
-                <Text style={styles.middlegrayText}>까지</Text>
+                )}
+                {responseData.gender === "both" && (
+                  <>
+                    <View style={styles.toggleButton2}>
+                      <Text style={styles.middlegrayText}>남자</Text>
+                    </View>
+                    <View style={{ marginHorizontal: 10 }} />
+                    <View style={styles.toggleButton2}>
+                      <Text style={styles.middlegrayText}>여자</Text>
+                    </View>
+                  </>
+                )}
               </View>
             </View>
-          </View>
 
-          <TouchableOpacity
-            style={{
-              backgroundColor: "#A5D699",
-              padding: 15,
-              borderRadius: 10,
-              margin: 20,
-              marginLeft: 40,
-              marginRight: 40,
-              alignItems: "center",
-            }}
-            //onPress={handleUpdate}
-          >
-            <Text style={styles.whiteText}>수정하기</Text>
-          </TouchableOpacity>
-        </ScrollView>
+            <View style={styles.contentContainer}>
+              <Text style={styles.subtitle}>맡을 나이를 선택해주세요</Text>
+
+              <View style={styles.toggleContainer}>
+                <View style={styles.toggleButton2}>
+                  <Text style={styles.middlegrayText}>
+                    {new Date().getFullYear() - responseData.child_age_from}세
+                  </Text>
+                </View>
+
+                <View style={styles.textBox}>
+                  <Text style={styles.middlegrayText}>부터</Text>
+                </View>
+
+                <View style={styles.toggleButton2}>
+                  <Text style={styles.middlegrayText}>
+                    {new Date().getFullYear() - responseData.child_age_to}세
+                  </Text>
+                </View>
+                <View style={styles.textBox}>
+                  <Text style={styles.middlegrayText}>까지</Text>
+                </View>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#A5D699",
+                padding: 15,
+                borderRadius: 10,
+                margin: 20,
+                marginLeft: 40,
+                marginRight: 40,
+                alignItems: "center",
+              }}
+              //onPress={handleUpdate}
+            >
+              <Text style={styles.whiteText}>수정하기</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        )
       ) : (
         <ScrollView>
           <View style={styles.contentContainer}>
@@ -531,7 +725,9 @@ const TabScreen2 = ({ navigation }) => {
               ]}
               onPress={handleMapPress}
             >
-              <Text style={styles.whiteText}>{selectedPlace}</Text>
+              <Text style={styles.whiteText}>
+                {isPlaceBoxSelected ? selectedPlace : userInfo.address}
+              </Text>
             </View>
 
             <TextInput
@@ -612,16 +808,16 @@ const TabScreen2 = ({ navigation }) => {
                 allowOverlap
                 snapped
                 unselectedStyle={{
-                  backgroundColor: "#D9D9D9", // 선택되지 않은 부분의 배경 색상
+                  backgroundColor: "#D9D9D9",
                 }}
                 selectedStyle={{
-                  backgroundColor: "#A5D699", // 선택된 부분의 배경 색상
+                  backgroundColor: "#A5D699",
                 }}
                 markerStyle={{
-                  backgroundColor: "#A5D699", // 마커의 배경 색상
+                  backgroundColor: "#A5D699",
                 }}
                 pressedMarkerStyle={{
-                  backgroundColor: "#D9D9D9", // 마커가 눌렸을 때의 배경 색상
+                  backgroundColor: "#D9D9D9",
                 }}
               />
             </View>
