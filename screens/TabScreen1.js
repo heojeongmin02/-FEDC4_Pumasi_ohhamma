@@ -8,6 +8,7 @@ import {
   ScrollView,
   StyleSheet,
   Modal,
+  Platform,
   Pressable,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
