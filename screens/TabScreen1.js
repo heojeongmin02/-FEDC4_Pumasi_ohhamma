@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
+  Modal,
+  Pressable,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import TabScreen1_mapmode from "./TabScreen1_mapmode";
@@ -103,8 +105,80 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  androidShadow: {
+    elevation: 5,
+  },
+  iosShadow: {
+    shadowColor: "black",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
+  },
+  modalContent: {
+    width: "95%",
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 20,
+  },
+  confirmButton: {
+    backgroundColor: "#A5D699",
+    marginTop: 10,
+    padding: 15,
+    borderRadius: 15,
+    height: 50,
+    alignItems: "center",
+  },
+  confirmButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  closeButton: {
+    marginTop: 15,
+    alignItems: "center",
+  },
+  closeButtonText: {
+    color: "#D5D5D5",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  mediumText: {
+    marginTop: 30,
+    fontSize: 25,
+    marginBottom: 10,
+  },
+  childSelectButton: {
+    width: "48%",
+    padding: 15,
+    marginBottom: 10,
+    borderRadius: 15,
+    backgroundColor: "#F0F0F0",
+    alignItems: "center",
+  },
+  childSelectButton_activated: {
+    width: "48%",
+    backgroundColor: "#A5D699",
+    marginBottom: 10,
+    padding: 15,
+    borderRadius: 15,
+    alignItems: "center",
+  },
+  childSelectButtonText: {
+    fontSize: 16,
+  },
+  childSelectButtonText_activated: {
+    color: "white",
+    fontSize: 16,
+  },
 });
 
+// 시간을 4자리 숫자로 받아서 00:00 형식으로 변환하는 함수
 const formatTime = (time) => {
   const hours = Math.floor(time / 100);
   const minutes = time % 100;
@@ -113,13 +187,13 @@ const formatTime = (time) => {
   }${minutes}`;
 };
 
+// 날짜를 2021년 1월 1일 금요일 형식으로 변환하는 함수
 const formatDate = (dateString) => {
   const year = dateString.substring(0, 4);
   const monthDay = dateString.substring(4);
   const month = parseInt(monthDay.substring(0, 2), 10);
   const day = parseInt(monthDay.substring(2), 10);
 
-  // JavaScript에서 월은 0부터 시작하므로 1을 더해줍니다.
   const formattedDate = new Date(`${year}-${month}-${day}`);
   const options = { weekday: "long" }; // 'long' 옵션을 통해 긴 형식의 요일을 가져옵니다.
   const dayOfWeek = new Intl.DateTimeFormat("ko-KR", options).format(
@@ -129,6 +203,7 @@ const formatDate = (dateString) => {
   return `${month}월 ${day}일 ${dayOfWeek}`;
 };
 
+// TabHeader 컴포넌트
 const TabHeader = ({ name, onTogglePress, mapModeVisible }) => (
   <View style={styles.tabHeader}>
     <Text style={styles.tabHeaderText}>{name}</Text>
@@ -140,61 +215,223 @@ const TabHeader = ({ name, onTogglePress, mapModeVisible }) => (
   </View>
 );
 
-const ContentBox = ({ content, onPlaceChildClick }) => {
-  const [isClicked, setIsClicked] = useState(false);
+// ChildContentBox 컴포넌트
+const ChildContentBox = ({ content, selectedChildId, setSelectedChildId }) => {
+  const isActivated = selectedChildId === content.child_id;
 
+  return (
+    <TouchableOpacity
+      style={
+        isActivated
+          ? styles.childSelectButton_activated
+          : styles.childSelectButton
+      }
+      onPress={() => setSelectedChildId(content.child_id)}
+    >
+      <Text
+        style={
+          isActivated
+            ? styles.childSelectButtonText_activated
+            : styles.childSelectButtonText
+        }
+      >{`${content.name}`}</Text>
+    </TouchableOpacity>
+  );
+};
+
+// ContentBox 컴포넌트
+const ContentBox = ({ content }) => {
+  const [isClicked, setIsClicked] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [childData, setChildData] = useState([]);
+  const [selectedChildId, setSelectedChildId] = useState(null);
+
+  // ContentBox를 클릭했을 때 실행되는 함수
   const handleContentBoxClick = () => {
     setIsClicked(!isClicked);
   };
 
+  // 맡기기 버튼을 클릭했을 때 실행되는 함수
+  const handlePlaceChildButton = () => {
+    setModalVisible(true);
+  };
+
+  // 맡기기 확인 버튼을 클릭했을 때 실행되는 함수
+  const handleConfirmButton = () => {
+    setModalVisible(false);
+    fetch(`http://pumasi.everdu.com/care/${content.email}/request`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `${idToken}`,
+      },
+      body: JSON.stringify({
+        child_id: selectedChildId,
+      }),
+    })
+      .then((response) => {
+        if (response.ok) {
+          console.log("Success");
+          console.log(content);
+        } else {
+          console.error("Error:", response.statusText);
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  };
+
+  // 아이 정보를 가져오는 함수
+  const fetchChildData = async () => {
+    try {
+      const response = await fetch(
+        `http://pumasi.everdu.com/user/${userId}/child`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${idToken}`,
+          },
+        }
+      );
+      if (response.ok) {
+        const result = await response.json();
+        setChildData(result);
+      } else {
+        console.error("Error fetching data:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  // fetchChildData를 최초에 실행하는 useEffect
+  useEffect(() => {
+    fetchChildData();
+  }, []);
+
   return (
-    <TouchableOpacity onPress={handleContentBoxClick} activeOpacity={0.7}>
-      <View style={styles.box}>
-        <Text style={[styles.contentText, styles.dateText]}>{`${formatDate(
-          content.date
-        )}`}</Text>
-        <Text style={styles.timeContainer}>
-          <Text style={[styles.contentText, styles.timeText, styles.largeText]}>
-            {`${formatTime(content.start_time)}`}
-          </Text>
-          <Text style={[styles.contentText, styles.timeText]}>
-            {" "}
-            {`부터   `}
-          </Text>
-          <Text style={[styles.contentText, styles.timeText, styles.largeText]}>
-            {`${formatTime(content.end_time)}`}
-          </Text>
-          <Text style={[styles.contentText, styles.timeText]}> 까지</Text>
-        </Text>
-
-        <Text style={styles.contentText}>{`${content.address}`}</Text>
-        {isClicked && (
-          <View>
-            <View style={styles.horizontalBox}>
-              <Text style={styles.contentText}>{`${
-                new Date().getFullYear() - content.child_age_from
-              }세 부터 ${
-                new Date().getFullYear() - content.child_age_to
-              }세 대상,  `}</Text>
-              <Text style={styles.contentText}>{`${
-                content.gender === "m" ? "남아" : "여아"
-              },  `}</Text>
-              <Text
-                style={styles.contentText}
-              >{`평점: ${content.rating}/5`}</Text>
-            </View>
-
-            <TouchableOpacity
-              onPress={onPlaceChildClick}
-              activeOpacity={0.7}
-              style={styles.placeChildButton}
+    <>
+      <TouchableOpacity onPress={handleContentBoxClick} activeOpacity={0.7}>
+        <View style={styles.box}>
+          <Text style={[styles.contentText, styles.dateText]}>{`${formatDate(
+            content.date
+          )}`}</Text>
+          <Text style={styles.timeContainer}>
+            <Text
+              style={[styles.contentText, styles.timeText, styles.largeText]}
             >
-              <Text style={styles.placeChildButtonText}>맡기기</Text>
+              {`${formatTime(content.start_time)}`}
+            </Text>
+            <Text style={[styles.contentText, styles.timeText]}>
+              {" "}
+              {`부터   `}
+            </Text>
+            <Text
+              style={[styles.contentText, styles.timeText, styles.largeText]}
+            >
+              {`${formatTime(content.end_time)}`}
+            </Text>
+            <Text style={[styles.contentText, styles.timeText]}> 까지</Text>
+          </Text>
+
+          <Text style={styles.contentText}>{`${content.address}`}</Text>
+          {isClicked && (
+            <View>
+              <View style={styles.horizontalBox}>
+                <Text style={styles.contentText}>{`${
+                  new Date().getFullYear() - content.child_age_from
+                }세 부터 ${
+                  new Date().getFullYear() - content.child_age_to
+                }세 대상,  `}</Text>
+                <Text style={styles.contentText}>{`${
+                  content.gender === "m" ? "남아" : "여아"
+                },  `}</Text>
+                <Text
+                  style={styles.contentText}
+                >{`평점: ${content.rating}/5`}</Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={handlePlaceChildButton}
+                activeOpacity={0.7}
+                style={styles.placeChildButton}
+              >
+                <Text style={styles.placeChildButtonText}>맡기기</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(!modalVisible);
+        }}
+      >
+        <View
+          style={[
+            styles.modalContainer,
+            Platform.OS === "android" ? styles.androidShadow : styles.iosShadow,
+          ]}
+        >
+          <View style={styles.modalContent}>
+            <Text style={[styles.contentText, styles.dateText]}>{`${formatDate(
+              content.date
+            )}`}</Text>
+            <Text style={styles.timeContainer}>
+              <Text
+                style={[styles.contentText, styles.timeText, styles.largeText]}
+              >
+                {`${formatTime(content.start_time)}`}
+              </Text>
+              <Text style={[styles.contentText, styles.timeText]}>
+                {" "}
+                {`부터   `}
+              </Text>
+              <Text
+                style={[styles.contentText, styles.timeText, styles.largeText]}
+              >
+                {`${formatTime(content.end_time)}`}
+              </Text>
+              <Text style={[styles.contentText, styles.timeText]}> 까지</Text>
+            </Text>
+
+            <Text style={styles.contentText}>{`${content.address}`}</Text>
+            <Text style={styles.mediumText}>맡길 아이를 선택해주세요</Text>
+            <View
+              style={{ flexDirection: "row", justifyContent: "space-between" }}
+            >
+              {childData.map((content) => (
+                <ChildContentBox
+                  key={content.child_id}
+                  content={content}
+                  selectedChildId={selectedChildId}
+                  setSelectedChildId={setSelectedChildId}
+                />
+              ))}
+            </View>
+            {/* 확인 버튼 */}
+            <TouchableOpacity
+              style={styles.confirmButton}
+              onPress={handleConfirmButton}
+            >
+              <Text style={styles.confirmButtonText}>맡기기</Text>
             </TouchableOpacity>
+            {/* 팝업 닫기 버튼 */}
+            <Pressable
+              style={styles.closeButton}
+              onPress={() => setModalVisible(!modalVisible)}
+            >
+              <Text style={styles.closeButtonText}>닫기</Text>
+            </Pressable>
           </View>
-        )}
-      </View>
-    </TouchableOpacity>
+        </View>
+      </Modal>
+    </>
   );
 };
 
@@ -206,40 +443,12 @@ const TabScreen1 = ({ navigation }) => {
   const [defaultStartTime, setdefaultStartTime] = useState(new Date());
   const [defaultEndTime, setDefaultEndTime] = useState(new Date());
 
+  // 지도/목록 전환 버튼을 눌렀을 때 실행되는 함수
   const handleTogglePress = () => {
     setMapModeVisible(!mapModeVisible);
   };
 
-  const handlePlaceChildClick = async (contentId) => {
-    try {
-      const response = await fetch(
-        `http://pumasi.everdu.com/care/${contentId}/status`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ status: "reserved" }),
-        }
-      );
-
-      if (response.ok) {
-        setData((prevData) =>
-          prevData.map((content) =>
-            content.id === contentId
-              ? { ...content, status: "reserved" }
-              : content
-          )
-        );
-        alert("예약되었습니다");
-      } else {
-        console.error("Server error:", response.status);
-      }
-    } catch (error) {
-      console.error("Fetch error:", error);
-    }
-  };
-
+  // 맡기기 데이터를 불러오는 useEffect
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -265,6 +474,7 @@ const TabScreen1 = ({ navigation }) => {
     fetchData();
   }, []);
 
+  // 시간을 초기화하는 useEffect
   useEffect(() => {
     setSelectedStartTime(1300);
     setSelectedEndTime(1400);
@@ -272,6 +482,7 @@ const TabScreen1 = ({ navigation }) => {
     defaultEndTime.setHours(14, 0, 0, 0);
   }, []);
 
+  // 시작 시간을 변경했을 때 실행되는 함수
   const onChangeStart = (event, selectedDate) => {
     if (selectedDate) {
       setdefaultStartTime(selectedDate);
@@ -282,6 +493,7 @@ const TabScreen1 = ({ navigation }) => {
     }
   };
 
+  // 종료 시간을 변경했을 때 실행되는 함수
   const onChangeEnd = (event, selectedDate) => {
     if (selectedDate) {
       setDefaultEndTime(selectedDate);
@@ -336,11 +548,7 @@ const TabScreen1 = ({ navigation }) => {
                 selectedEndTime <= content.end_time
             )
             .map((content, index) => (
-              <ContentBox
-                key={index}
-                content={content}
-                onPlaceChildClick={() => handlePlaceChildClick(content.id)}
-              />
+              <ContentBox key={index} content={content} />
             ))}
         </ScrollView>
       )}

@@ -262,61 +262,60 @@ const TabScreen5 = () => {
     }
   };
 
+  // 유저 정보를 가져오는 함수
+  const fetchUserData = async () => {
+    try {
+      const response = await fetch(`http://pumasi.everdu.com/user/${userId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `${idToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setUserData(result);
+      } else {
+        console.error("Error fetching data:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
   // 유저 정보를 가져오는 useEffect
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(
-          `http://pumasi.everdu.com/user/${userId}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `${idToken}`,
-            },
-          }
-        );
-
-        if (response.ok) {
-          const result = await response.json();
-          setUserData(result);
-        } else {
-          console.error("Error fetching data:", response.statusText);
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-
-    fetchData();
+    fetchUserData();
   }, []);
+
+  // 맡기기 정보를 가져오는 함수
+  const fetchCareData = async () => {
+    try {
+      const response = await fetch(
+        `http://pumasi.everdu.com/user/${userId}/care`, // 변경된 부분
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${idToken}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        setCareData(result);
+      } else {
+        console.error("Error fetching care data:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching care data:", error);
+    }
+  };
 
   // 맡기기 정보를 가져오는 useEffect
   useEffect(() => {
-    const fetchCareData = async () => {
-      try {
-        const response = await fetch(
-          `http://pumasi.everdu.com/user/${userId}/care`, // 변경된 부분
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `${idToken}`,
-            },
-          }
-        );
-
-        if (response.ok) {
-          const result = await response.json();
-          setCareData(result);
-        } else {
-          console.error("Error fetching care data:", response.statusText);
-        }
-      } catch (error) {
-        console.error("Error fetching care data:", error);
-      }
-    };
-
     fetchCareData();
   }, []);
 
@@ -359,29 +358,44 @@ const TabScreen5 = () => {
       introduce: content.introduce,
     });
 
+    // 컨텐츠 박스를 클릭했을 때 호출되는 함수
     const handleContentBoxClick = () => {
       setIsClicked(!isClicked);
     };
 
+    // 저장 버튼을 눌렀을 때 호출되는 함수
     const handleSavePress = () => {
-      // 여기에 저장 동작 구현
       setIsEditing(false);
-      setUserData((prevData) => ({
-        ...prevData,
-        address: editedUserData.address,
-        introduce: editedUserData.introduce,
-      }));
+      fetch(`http://pumasi.everdu.com/user/${userId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `${idToken}`,
+        },
+        body: JSON.stringify(editedUserData),
+      })
+        .then((response) => {
+          if (response.ok) {
+            console.log("User updated successfully");
+            fetchUserData();
+          } else {
+            console.error("Error updating user:", response.statusText);
+          }
+        })
+        .catch((error) => {
+          console.error("Error updating user:", error);
+        });
     };
 
+    // 편집 버튼을 눌렀을 때 호출되는 함수
     const handleEditPress = () => {
-      // 여기에 편집 모드 전환 동작 구현
       setIsEditing(true);
     };
 
     return (
       <TouchableOpacity style={styles.box} onPress={handleContentBoxClick}>
         <Text style={styles.largeText}>{content.name}</Text>
-        <Text style={styles.contentText}>별점: {content.point}</Text>
+        <Text style={styles.contentText}>보유 크레딧: {content.point}</Text>
         <Text style={styles.contentText}>주소: {content.address}</Text>
         <Text style={styles.contentText}>소개: {content.introduce}</Text>
         {isClicked &&
@@ -400,7 +414,7 @@ const TabScreen5 = () => {
               />
               <TextInput
                 style={styles.inputBox}
-                placeholder="새 소개"
+                placeholder="소개"
                 value={editedUserData.introduce}
                 onChangeText={(text) =>
                   setEditedUserData((prevData) => ({
@@ -477,7 +491,6 @@ const TabScreen5 = () => {
         }
       )
         .then((response) => {
-          console.log(response);
           if (response.ok) {
             console.log("Child deleted successfully");
             fetchChildData();
@@ -588,23 +601,29 @@ const TabScreen5 = () => {
       setModalVisible(true);
     };
 
+    // 리뷰 제출 함수
     const handleSubmitReview = () => {
-      // 평점과 리뷰를 서버에 전송하는 코드를 여기에 작성하세요.
       console.log(`Rating: ${rating}, Review: ${review}`);
       setModalVisible(false);
 
-      fetch(`http://pumasi.everdu.com/care/${userId}/care/complete`, {
+      const result = {
+        rating,
+        point: 140,
+      };
+
+      fetch(`http://pumasi.everdu.com/care/${content.email}/complete`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `${idToken}`,
         },
-        body: JSON.stringify({ rating, point: 200 }),
+        body: JSON.stringify(result),
       })
         .then((response) => {
           console.log(response);
           if (response.ok) {
             console.log("Review submitted successfully");
+            fetchCareData();
           } else {
             console.error("Error submitting review:", response.statusText);
           }
@@ -613,6 +632,8 @@ const TabScreen5 = () => {
           console.error("Error submitting review:", error);
         });
     };
+
+    console.log(content);
 
     return (
       <TouchableOpacity
@@ -623,7 +644,7 @@ const TabScreen5 = () => {
         <Text style={styles.contentText}>
           {`${formatTime(content.start_time)} 부터 ${formatTime(
             content.end_time
-          )} 까지 ${content.email}님에게`}
+          )} 까지 ${content.id}님에게`}
         </Text>
         <Text style={styles.contentText}>주소: {content.address}</Text>
         {isClicked && (
