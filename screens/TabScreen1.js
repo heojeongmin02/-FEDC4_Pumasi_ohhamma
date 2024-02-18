@@ -246,7 +246,7 @@ const ChildContentBox = ({ content, selectedChildId, setSelectedChildId }) => {
 };
 
 // ContentBox 컴포넌트
-const ContentBox = ({ content, fetchData }) => {
+const ContentBox = ({ content, fetchData, navigation }) => {
   const [isClicked, setIsClicked] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [childData, setChildData] = useState([]);
@@ -278,6 +278,8 @@ const ContentBox = ({ content, fetchData }) => {
       .then((response) => {
         if (response.ok) {
           console.log("Success");
+          alert("예약되었습니다. 채팅을 시작해보세요!");
+          navigation.navigate("ChatList", { inviteUserEmail: content.email });
           fetchData();
         } else {
           console.error("Error:", response.statusText);
@@ -441,7 +443,7 @@ const ContentBox = ({ content, fetchData }) => {
   );
 };
 
-const TabScreen1 = () => {
+const TabScreen1 = (navigation) => {
   const [mapModeVisible, setMapModeVisible] = useState(false);
   const [data, setData] = useState([]);
   const [selectedStartTime, setSelectedStartTime] = useState("");
@@ -471,6 +473,7 @@ const TabScreen1 = () => {
       if (response.ok) {
         const result = await response.json();
         setData(result);
+        console.log(result);
       } else {
         console.error("Error fetching data:", response.statusText);
       }
@@ -811,7 +814,12 @@ const TabScreen1 = () => {
                 selectedEndTime <= content.end_time
             )
             .map((content, index) => (
-              <ContentBox key={index} content={content} fetchData={fetchData} />
+              <ContentBox
+                key={index}
+                content={content}
+                fetchData={fetchData}
+                navigation={navigation}
+              />
             ))}
         </ScrollView>
       )}

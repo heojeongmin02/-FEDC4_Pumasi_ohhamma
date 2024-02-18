@@ -276,6 +276,7 @@ const TabScreen5 = () => {
       if (response.ok) {
         const result = await response.json();
         setUserData(result);
+        console.log(result);
       } else {
         console.error("Error fetching data:", response.statusText);
       }
@@ -603,13 +604,13 @@ const TabScreen5 = () => {
 
     // 리뷰 제출 함수
     const handleSubmitReview = () => {
-      console.log(`Rating: ${rating}, Review: ${review}`);
       setModalVisible(false);
 
       const result = {
-        rating,
+        rating: rating,
         point: 10,
       };
+
       fetch(`http://pumasi.everdu.com/care/${content.id}/complete`, {
         method: "POST",
         headers: {
@@ -623,7 +624,7 @@ const TabScreen5 = () => {
             console.log("Review submitted successfully");
             fetchCareData();
           } else {
-            console.error("Error submitting review:", response.statusText);
+            console.error("Error submitting review:", response.status);
           }
         })
         .catch((error) => {

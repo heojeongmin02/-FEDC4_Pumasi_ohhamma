@@ -1,4 +1,5 @@
 // TabScreen1_mapmode.js
+// 이 파일은 더이상 사용되지 않습니다. TabScreen1_mapmode.js 파일은 TabScreen1.js 파일로 통합되었습니다.
 
 import React, { useEffect, useState } from "react";
 import {

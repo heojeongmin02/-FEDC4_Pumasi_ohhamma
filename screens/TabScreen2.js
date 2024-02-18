@@ -326,7 +326,7 @@ const TabScreen2 = ({ navigation }) => {
     const fetchUserInfo = async () => {
       try {
         const response = await fetch(
-          `http://pumasi.everdu.com/care/${userId}`,
+          `http://pumasi.everdu.com/user/${userId}`,
           {
             method: "GET",
             headers: {
@@ -335,7 +335,6 @@ const TabScreen2 = ({ navigation }) => {
             },
           }
         );
-
         if (response.ok) {
           const fetchedUserInfo = await response.json();
           setUserInfo(fetchedUserInfo);
@@ -351,21 +350,22 @@ const TabScreen2 = ({ navigation }) => {
   }, []); // userId가 변경될 때마다 사용자 정보를 다시 불러옴
 
   const handlePostData = async () => {
+    console.log(userInfo);
     const postData = {
       date: formatDate(selectedDate),
       start_time: formatTime(selectedStartTime),
       end_time: formatTime(selectedEndTime),
       child_age_from: formatAge(selectedAgeRange[0]),
       child_age_to: formatAge(selectedAgeRange[1]),
-      rating: userInfo.rating,
       address: isPlaceBoxSelected
         ? selectedPlace + " " + detailedAddress
         : userInfo.address + " " + detailedAddress,
-      email: userInfo.email,
+      email: userInfo.email ? userInfo.email : userId,
       gender: formatGender(),
     };
 
     try {
+      console.log("게시할 데이터:", postData);
       const response = await fetch("http://pumasi.everdu.com/care/", {
         method: "POST",
         headers: {
