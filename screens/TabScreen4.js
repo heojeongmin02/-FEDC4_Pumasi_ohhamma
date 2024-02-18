@@ -161,22 +161,22 @@ const ChatRoomScreen = ({ navigation }) => {
     fetchMessages();
   }, [roomId, idToken]);
 
-  // const fetchMessagesPeriodically = async () => {
-  //   await fetchMessages();
+  const fetchMessagesPeriodically = async () => {
+    await fetchMessages();
 
-  //   const intervalId = setInterval(async () => {
-  //     await fetchMessages();
-  //   }, 10000); // 10초
+    const intervalId = setInterval(async () => {
+      await fetchMessages();
+    }, 10000); // 10초
 
-  //   // clearInterval 호출하여 중단
-  //   return () => {
-  //     clearInterval(intervalId);
-  //   };
-  // };
+    // clearInterval 호출하여 중단
+    return () => {
+      clearInterval(intervalId);
+    };
+  };
 
-  // useEffect(() => {
-  //   fetchMessagesPeriodically();
-  // }, [roomId, idToken]);
+  useEffect(() => {
+    fetchMessagesPeriodically();
+  }, [roomId, idToken]);
 
   const onSend = async (newMessages = []) => {
     try {
