@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
-    height: 200,
+    height: 230,
   },
 });
 
@@ -225,8 +225,26 @@ const TabScreen2 = ({ navigation }) => {
       });
 
       if (address.length > 0) {
-        const selectedAddress = `${address[0].region} ${address[0].city} ${address[0].street} ${address[0].name}`;
-        setSelectedPlace(selectedAddress);
+        const { region, city, district, street, name } = address[0];
+        let selectedAddress = "";
+
+        if (region != null) {
+          selectedAddress += `${region} `;
+        }
+        if (city != null) {
+          selectedAddress += `${city} `;
+        }
+        if (district != null) {
+          selectedAddress += `${district} `;
+        }
+        if (street != null) {
+          selectedAddress += `${street} `;
+        }
+        if (name != null) {
+          selectedAddress += `${name}`;
+        }
+
+        setSelectedPlace(selectedAddress.trim());
         setIsPlaceBoxSelected(true);
       }
     } catch (error) {
