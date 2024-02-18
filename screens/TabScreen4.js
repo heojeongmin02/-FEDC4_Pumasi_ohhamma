@@ -63,9 +63,8 @@ const ChatListScreen = ({ route, navigation }) => {
       if (response.status === 201) {
         const responseData = await response.json();
         const roomId = responseData.room_id;
-        const roomName = responseData.roomName;
-        // responseData.roomName의 roomName 서버에서 지정한 이름으로 바꿀 것 !!!!
-        return roomId, roomName;
+        const roomName = responseData.invited_user_name;
+        return { roomId, roomName };
       } else {
         console.error("채팅방 생성 실패:", response.status);
       }
@@ -77,7 +76,8 @@ const ChatListScreen = ({ route, navigation }) => {
   useEffect(() => {
     const fetchAndCreateChatRoom = async () => {
       if (inviteUserEmail) {
-        await createChatRoom(inviteUserEmail);
+        const { roomId, roomName } = await createChatRoom(inviteUserEmail);
+        console.log(`생성된 채팅방 ID: ${roomId}, 이름: ${roomName}`);
       }
       await fetchChatRooms();
     };
