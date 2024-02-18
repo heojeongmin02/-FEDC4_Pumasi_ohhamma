@@ -365,9 +365,6 @@ const TabScreen2 = ({ navigation }) => {
       gender: formatGender(),
     };
 
-    Alert.alert("게시하기", JSON.stringify(postData));
-    // 나중엔 삭제할거임~~
-
     try {
       const response = await fetch("http://pumasi.everdu.com/care/", {
         method: "POST",
@@ -382,15 +379,12 @@ const TabScreen2 = ({ navigation }) => {
         const responseData = await response.json();
         setResponseData(responseData);
         console.log("서버 응답:", responseData);
-        Alert.alert("게시하기", "게시 성공!");
         setIsPostSubmitted(true);
       } else {
         console.error("서버 응답 오류2:", response.status);
-        Alert.alert("게시하기", "게시 실패. 서버 응답 오류 발생!");
       }
     } catch (error) {
       console.error("데이터 게시 중 오류:", error);
-      Alert.alert("게시하기", "게시 실패. 에러 발생!");
     }
   };
 
@@ -631,21 +625,6 @@ const TabScreen2 = ({ navigation }) => {
                 </View>
               </View>
             </View>
-
-            <TouchableOpacity
-              style={{
-                backgroundColor: "#A5D699",
-                padding: 15,
-                borderRadius: 10,
-                margin: 20,
-                marginLeft: 40,
-                marginRight: 40,
-                alignItems: "center",
-              }}
-              //onPress={setIsPostSubmitted(false)}
-            >
-              <Text style={styles.whiteText}>수정하기</Text>
-            </TouchableOpacity>
           </ScrollView>
         )
       ) : (
