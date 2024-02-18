@@ -306,9 +306,9 @@ const TabScreen2 = ({ navigation }) => {
 
   const formatGender = () => {
     if (selectedGender.length === 1) {
-      if (selectedGender.includes("남자")) {
+      if (selectedGender.includes("남아")) {
         return "m";
-      } else if (selectedGender.includes("여자")) {
+      } else if (selectedGender.includes("여아")) {
         return "f";
       }
     }
@@ -393,6 +393,13 @@ const TabScreen2 = ({ navigation }) => {
       Alert.alert("게시하기", "게시 실패. 에러 발생!");
     }
   };
+
+  // 서버에서 시간 지난 맡기 데이터 처리 status 만들면 주석을 풀어요
+  useEffect(() => {
+    if (responseData && responseData.status === "accepted") {
+      setIsPostSubmitted(false);
+    }
+  }, [responseData]);
 
   const formatDateString = (dateString) => {
     const year = dateString.substring(0, 4);
@@ -578,22 +585,22 @@ const TabScreen2 = ({ navigation }) => {
               <View style={styles.toggleContainer}>
                 {responseData.gender === "m" && (
                   <View style={styles.toggleButton2}>
-                    <Text style={styles.middlegrayText}>남자</Text>
+                    <Text style={styles.middlegrayText}>남아</Text>
                   </View>
                 )}
                 {responseData.gender === "f" && (
                   <View style={styles.toggleButton2}>
-                    <Text style={styles.middlegrayText}>여자</Text>
+                    <Text style={styles.middlegrayText}>여아</Text>
                   </View>
                 )}
                 {responseData.gender === "both" && (
                   <>
                     <View style={styles.toggleButton2}>
-                      <Text style={styles.middlegrayText}>남자</Text>
+                      <Text style={styles.middlegrayText}>남아</Text>
                     </View>
                     <View style={{ marginHorizontal: 10 }} />
                     <View style={styles.toggleButton2}>
-                      <Text style={styles.middlegrayText}>여자</Text>
+                      <Text style={styles.middlegrayText}>여아</Text>
                     </View>
                   </>
                 )}
@@ -635,7 +642,7 @@ const TabScreen2 = ({ navigation }) => {
                 marginRight: 40,
                 alignItems: "center",
               }}
-              //onPress={handleUpdate}
+              //onPress={setIsPostSubmitted(false)}
             >
               <Text style={styles.whiteText}>수정하기</Text>
             </TouchableOpacity>
@@ -788,13 +795,13 @@ const TabScreen2 = ({ navigation }) => {
               <TouchableOpacity
                 style={[
                   styles.toggleButton,
-                  selectedGender.includes("남자")
+                  selectedGender.includes("남아")
                     ? null
                     : { backgroundColor: "#D9D9D9" },
                 ]}
-                onPress={() => handleGenderSelection("남자")}
+                onPress={() => handleGenderSelection("남아")}
               >
-                <Text style={styles.whiteText}>남자</Text>
+                <Text style={styles.whiteText}>남아</Text>
               </TouchableOpacity>
 
               <View style={{ marginHorizontal: 10 }} />
@@ -802,13 +809,13 @@ const TabScreen2 = ({ navigation }) => {
               <TouchableOpacity
                 style={[
                   styles.toggleButton,
-                  selectedGender.includes("여자")
+                  selectedGender.includes("여아")
                     ? null
                     : { backgroundColor: "#D9D9D9" },
                 ]}
-                onPress={() => handleGenderSelection("여자")}
+                onPress={() => handleGenderSelection("여아")}
               >
-                <Text style={styles.whiteText}>여자</Text>
+                <Text style={styles.whiteText}>여아</Text>
               </TouchableOpacity>
             </View>
           </View>
