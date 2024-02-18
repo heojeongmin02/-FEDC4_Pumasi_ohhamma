@@ -8,6 +8,7 @@ import TabScreen3 from "./screens/TabScreen3";
 import TabScreen4 from "./screens/TabScreen4";
 import TabScreen5 from "./screens/TabScreen5";
 import LoginScreen from "./screens/LoginScreen";
+import { PostProvider } from "./screens/PostContext";
 
 const tabs = [
   {
@@ -40,10 +41,14 @@ const tabs = [
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false); // 로그인 상태를 저장하는 state
   // 로그인된 상태에서는 탭 화면을 보여주고, 그렇지 않은 경우 로그인 화면을 보여줌
-  return isLoggedIn ? (
-    <TabNavigator tabs={tabs} />
-  ) : (
-    <LoginScreen onLogin={() => setIsLoggedIn(true)} />
+  return (
+    <PostProvider>
+      {isLoggedIn ? (
+        <TabNavigator tabs={tabs} />
+      ) : (
+        <LoginScreen onLogin={() => setIsLoggedIn(true)} />
+      )}
+    </PostProvider>
   );
 };
 
