@@ -608,10 +608,9 @@ const TabScreen5 = () => {
 
       const result = {
         rating,
-        point: 140,
+        point: 10,
       };
-
-      fetch(`http://pumasi.everdu.com/care/${content.email}/complete`, {
+      fetch(`http://pumasi.everdu.com/care/${content.id}/complete`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -620,7 +619,6 @@ const TabScreen5 = () => {
         body: JSON.stringify(result),
       })
         .then((response) => {
-          console.log(response);
           if (response.ok) {
             console.log("Review submitted successfully");
             fetchCareData();
@@ -632,8 +630,6 @@ const TabScreen5 = () => {
           console.error("Error submitting review:", error);
         });
     };
-
-    console.log(content);
 
     return (
       <TouchableOpacity

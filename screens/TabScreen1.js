@@ -8,11 +8,14 @@ import {
   ScrollView,
   StyleSheet,
   Modal,
+  Platform,
   Pressable,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import TabScreen1_mapmode from "./TabScreen1_mapmode";
 import { idToken, userId } from "./LoginScreen";
+import MapView, { Marker } from "react-native-maps";
+import Geocoder from "react-native-geocoding";
+import * as Location from "expo-location";
 
 const styles = StyleSheet.create({
   container: {
@@ -529,9 +532,10 @@ const TabScreen1 = ({ navigation }) => {
       </View>
 
       {mapModeVisible ? (
-        <TabScreen1_mapmode
+        <MapView
           data={data.filter(
             (content) =>
+              content.email !== userId &&
               content.status !== "reserved" &&
               selectedStartTime >= content.start_time &&
               selectedEndTime <= content.end_time
@@ -542,7 +546,7 @@ const TabScreen1 = ({ navigation }) => {
           {data
             .filter(
               (content) =>
-                content.id !== userId &&
+                content.email !== userId &&
                 content.status !== "reserved" &&
                 selectedStartTime >= content.start_time &&
                 selectedEndTime <= content.end_time
