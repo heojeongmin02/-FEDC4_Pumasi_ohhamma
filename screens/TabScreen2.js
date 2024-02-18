@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
-    height: 200,
+    height: 230,
   },
 });
 
@@ -225,8 +225,26 @@ const TabScreen2 = ({ navigation }) => {
       });
 
       if (address.length > 0) {
-        const selectedAddress = `${address[0].region} ${address[0].city} ${address[0].street} ${address[0].name}`;
-        setSelectedPlace(selectedAddress);
+        const { region, city, district, street, name } = address[0];
+        let selectedAddress = "";
+
+        if (region != null) {
+          selectedAddress += `${region} `;
+        }
+        if (city != null) {
+          selectedAddress += `${city} `;
+        }
+        if (district != null) {
+          selectedAddress += `${district} `;
+        }
+        if (street != null) {
+          selectedAddress += `${street} `;
+        }
+        if (name != null) {
+          selectedAddress += `${name}`;
+        }
+
+        setSelectedPlace(selectedAddress.trim());
         setIsPlaceBoxSelected(true);
       }
     } catch (error) {
@@ -288,9 +306,9 @@ const TabScreen2 = ({ navigation }) => {
 
   const formatGender = () => {
     if (selectedGender.length === 1) {
-      if (selectedGender.includes("남자")) {
+      if (selectedGender.includes("남아")) {
         return "m";
-      } else if (selectedGender.includes("여자")) {
+      } else if (selectedGender.includes("여아")) {
         return "f";
       }
     }
@@ -347,9 +365,6 @@ const TabScreen2 = ({ navigation }) => {
       gender: formatGender(),
     };
 
-    Alert.alert("게시하기", JSON.stringify(postData));
-    // 나중엔 삭제할거임~~
-
     try {
       const response = await fetch("http://pumasi.everdu.com/care/", {
         method: "POST",
@@ -364,17 +379,21 @@ const TabScreen2 = ({ navigation }) => {
         const responseData = await response.json();
         setResponseData(responseData);
         console.log("서버 응답:", responseData);
-        Alert.alert("게시하기", "게시 성공!");
         setIsPostSubmitted(true);
       } else {
         console.error("서버 응답 오류2:", response.status);
-        Alert.alert("게시하기", "게시 실패. 서버 응답 오류 발생!");
       }
     } catch (error) {
       console.error("데이터 게시 중 오류:", error);
-      Alert.alert("게시하기", "게시 실패. 에러 발생!");
     }
   };
+
+  // 서버에서 시간 지난 맡기 데이터 처리 status 만들면 주석을 풀어요
+  useEffect(() => {
+    if (responseData && responseData.status === "accepted") {
+      setIsPostSubmitted(false);
+    }
+  }, [responseData]);
 
   const formatDateString = (dateString) => {
     const year = dateString.substring(0, 4);
@@ -560,22 +579,22 @@ const TabScreen2 = ({ navigation }) => {
               <View style={styles.toggleContainer}>
                 {responseData.gender === "m" && (
                   <View style={styles.toggleButton2}>
-                    <Text style={styles.middlegrayText}>남자</Text>
+                    <Text style={styles.middlegrayText}>남아</Text>
                   </View>
                 )}
                 {responseData.gender === "f" && (
                   <View style={styles.toggleButton2}>
-                    <Text style={styles.middlegrayText}>여자</Text>
+                    <Text style={styles.middlegrayText}>여아</Text>
                   </View>
                 )}
                 {responseData.gender === "both" && (
                   <>
                     <View style={styles.toggleButton2}>
-                      <Text style={styles.middlegrayText}>남자</Text>
+                      <Text style={styles.middlegrayText}>남아</Text>
                     </View>
                     <View style={{ marginHorizontal: 10 }} />
                     <View style={styles.toggleButton2}>
-                      <Text style={styles.middlegrayText}>여자</Text>
+                      <Text style={styles.middlegrayText}>여아</Text>
                     </View>
                   </>
                 )}
@@ -606,21 +625,6 @@ const TabScreen2 = ({ navigation }) => {
                 </View>
               </View>
             </View>
-
-            <TouchableOpacity
-              style={{
-                backgroundColor: "#A5D699",
-                padding: 15,
-                borderRadius: 10,
-                margin: 20,
-                marginLeft: 40,
-                marginRight: 40,
-                alignItems: "center",
-              }}
-              //onPress={handleUpdate}
-            >
-              <Text style={styles.whiteText}>수정하기</Text>
-            </TouchableOpacity>
           </ScrollView>
         )
       ) : (
@@ -770,13 +774,13 @@ const TabScreen2 = ({ navigation }) => {
               <TouchableOpacity
                 style={[
                   styles.toggleButton,
-                  selectedGender.includes("남자")
+                  selectedGender.includes("남아")
                     ? null
                     : { backgroundColor: "#D9D9D9" },
                 ]}
-                onPress={() => handleGenderSelection("남자")}
+                onPress={() => handleGenderSelection("남아")}
               >
-                <Text style={styles.whiteText}>남자</Text>
+                <Text style={styles.whiteText}>남아</Text>
               </TouchableOpacity>
 
               <View style={{ marginHorizontal: 10 }} />
@@ -784,13 +788,13 @@ const TabScreen2 = ({ navigation }) => {
               <TouchableOpacity
                 style={[
                   styles.toggleButton,
-                  selectedGender.includes("여자")
+                  selectedGender.includes("여아")
                     ? null
                     : { backgroundColor: "#D9D9D9" },
                 ]}
-                onPress={() => handleGenderSelection("여자")}
+                onPress={() => handleGenderSelection("여아")}
               >
-                <Text style={styles.whiteText}>여자</Text>
+                <Text style={styles.whiteText}>여아</Text>
               </TouchableOpacity>
             </View>
           </View>
