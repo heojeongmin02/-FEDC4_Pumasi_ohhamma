@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   timePicker: {
-    paddingTop: 15,
+    paddingTop: 10,
     paddingLeft: 5,
     paddingBottom: 10,
     flexDirection: "row",
@@ -179,6 +179,9 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
   },
+  map: {
+    flex: 1,
+  },
 });
 
 // 시간을 4자리 숫자로 받아서 00:00 형식으로 변환하는 함수
@@ -243,7 +246,7 @@ const ChildContentBox = ({ content, selectedChildId, setSelectedChildId }) => {
 };
 
 // ContentBox 컴포넌트
-const ContentBox = ({ content }) => {
+const ContentBox = ({ content, fetchData }) => {
   const [isClicked, setIsClicked] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [childData, setChildData] = useState([]);
@@ -275,7 +278,7 @@ const ContentBox = ({ content }) => {
       .then((response) => {
         if (response.ok) {
           console.log("Success");
-          console.log(content);
+          fetchData();
         } else {
           console.error("Error:", response.statusText);
         }
@@ -438,7 +441,7 @@ const ContentBox = ({ content }) => {
   );
 };
 
-const TabScreen1 = ({ navigation }) => {
+const TabScreen1 = () => {
   const [mapModeVisible, setMapModeVisible] = useState(false);
   const [data, setData] = useState([]);
   const [selectedStartTime, setSelectedStartTime] = useState("");
@@ -446,34 +449,38 @@ const TabScreen1 = ({ navigation }) => {
   const [defaultStartTime, setdefaultStartTime] = useState(new Date());
   const [defaultEndTime, setDefaultEndTime] = useState(new Date());
 
+  const GOOGLE_MAPS_API_KEY = "AIzaSyAFAKESEokQqhqHi9hNx-ZUn-9fabPWNj4";
+  Geocoder.init(GOOGLE_MAPS_API_KEY);
+
   // 지도/목록 전환 버튼을 눌렀을 때 실행되는 함수
   const handleTogglePress = () => {
     setMapModeVisible(!mapModeVisible);
   };
 
+  // 데이터를 불러오는 함수
+  const fetchData = async () => {
+    try {
+      const response = await fetch("http://pumasi.everdu.com/care/list", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `${idToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setData(result);
+      } else {
+        console.error("Error fetching data:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
   // 맡기기 데이터를 불러오는 useEffect
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch("http://pumasi.everdu.com/care/list", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `${idToken}`,
-          },
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          setData(result);
-        } else {
-          console.error("Error fetching data:", response.statusText);
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-
     fetchData();
   }, []);
 
@@ -507,6 +514,258 @@ const TabScreen1 = ({ navigation }) => {
     }
   };
 
+  // MapView 컴포넌트
+  const MapContent = ({ data }) => {
+    const [region, setRegion] = useState(null);
+    const [markers, setMarkers] = useState([]);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [childData, setChildData] = useState([]);
+    const [selectedChildId, setSelectedChildId] = useState(null);
+    const [selectedMarker, setSelectedMarker] = useState({
+      address: "서울특별시",
+      child_age_from: 2020,
+      child_age_to: 2013,
+      date: "20240206",
+      email: "test2@example.com",
+      end_time: 1400,
+      gender: "f",
+      id: "test@example.com",
+      location: { latitude: 37.4919338, longitude: 127.0565469 },
+      rating: 4.0,
+      start_time: 1300,
+      status: "waiting",
+      user_name: "test",
+    });
+
+    // 지도 스타일
+    const customMapStyle = [
+      {
+        featureType: "poi",
+        elementType: "all",
+        stylers: [{ visibility: "off" }],
+      },
+      {
+        featureType: "transit",
+        elementType: "all",
+        stylers: [{ visibility: "off" }],
+      },
+    ];
+
+    // 현재 위치를 가져오는 useEffect
+    useEffect(() => {
+      (async () => {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          console.error("Permission to access location was denied");
+          return;
+        }
+
+        let location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Lowest,
+        });
+
+        setRegion({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.02,
+        });
+
+        const geocodedMarkers = await Promise.all(
+          data.map(async (content) => {
+            let geocode;
+
+            try {
+              geocode = await Geocoder.from(content.address);
+            } catch (error) {
+              console.error("Geocoding error:", error);
+              geocode = [];
+            }
+            return {
+              ...content,
+              location: {
+                latitude: geocode.results[0].geometry.location.lat,
+                longitude: geocode.results[0].geometry.location.lng,
+              },
+            };
+          })
+        );
+        // 지오코딩된 좌표로 마커 설정
+        setMarkers(geocodedMarkers);
+      })();
+    }, []);
+
+    // 아이 정보를 가져오는 함수
+    const fetchChildData = async () => {
+      try {
+        const response = await fetch(
+          `http://pumasi.everdu.com/user/${userId}/child`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `${idToken}`,
+            },
+          }
+        );
+        if (response.ok) {
+          const result = await response.json();
+          setChildData(result);
+        } else {
+          console.error("Error fetching data:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    // fetchChildData를 최초에 실행하는 useEffect
+    useEffect(() => {
+      fetchChildData();
+    }, []);
+
+    // 특정 마커를 클릭했을 때 실행되는 함수
+    const handleMarkerPress = (content) => {
+      setSelectedMarker(content);
+      setModalVisible(true);
+    };
+
+    // 맡기기 확인 버튼을 클릭했을 때 실행되는 함수
+    const handleConfirmButton = (content) => {
+      setModalVisible(false);
+      fetch(`http://pumasi.everdu.com/care/${content.email}/request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `${idToken}`,
+        },
+        body: JSON.stringify({
+          child_id: selectedChildId,
+        }),
+      })
+        .then((response) => {
+          if (response.ok) {
+            console.log("Success");
+            fetchData();
+          } else {
+            console.error("Error:", response.statusText);
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        });
+    };
+
+    return (
+      <View style={styles.container}>
+        {region && (
+          <MapView
+            style={styles.map}
+            region={region}
+            provider="google"
+            customMapStyle={customMapStyle}
+            showsUserLocation={true}
+          >
+            {markers.map((content) => (
+              <Marker
+                key={content.email}
+                coordinate={{
+                  latitude: content.location?.latitude || 0,
+                  longitude: content.location?.longitude || 0,
+                }}
+                title={content.address}
+                description={`평점: ${content.rating}`}
+                onPress={() => handleMarkerPress(content)}
+              />
+            ))}
+          </MapView>
+        )}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => {
+            setModalVisible(!modalVisible);
+          }}
+        >
+          <View
+            style={[
+              styles.modalContainer,
+              Platform.OS === "android"
+                ? styles.androidShadow
+                : styles.iosShadow,
+            ]}
+          >
+            <View style={styles.modalContent}>
+              <Text
+                style={[styles.contentText, styles.dateText]}
+              >{`${formatDate(selectedMarker.date)}`}</Text>
+              <Text style={styles.timeContainer}>
+                <Text
+                  style={[
+                    styles.contentText,
+                    styles.timeText,
+                    styles.largeText,
+                  ]}
+                >
+                  {`${formatTime(selectedMarker.start_time)}`}
+                </Text>
+                <Text style={[styles.contentText, styles.timeText]}>
+                  {" "}
+                  {`부터   `}
+                </Text>
+                <Text
+                  style={[
+                    styles.contentText,
+                    styles.timeText,
+                    styles.largeText,
+                  ]}
+                >
+                  {`${formatTime(selectedMarker.end_time)}`}
+                </Text>
+                <Text style={[styles.contentText, styles.timeText]}> 까지</Text>
+              </Text>
+
+              <Text
+                style={styles.contentText}
+              >{`${selectedMarker.address}`}</Text>
+              <Text style={styles.mediumText}>맡길 아이를 선택해주세요</Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                {childData.map((selectedMarker) => (
+                  <ChildContentBox
+                    key={selectedMarker.child_id}
+                    content={selectedMarker}
+                    selectedChildId={selectedChildId}
+                    setSelectedChildId={setSelectedChildId}
+                  />
+                ))}
+              </View>
+              {/* 확인 버튼 */}
+              <TouchableOpacity
+                style={styles.confirmButton}
+                onPress={() => handleConfirmButton(selectedMarker)}
+              >
+                <Text style={styles.confirmButtonText}>맡기기</Text>
+              </TouchableOpacity>
+              {/* 팝업 닫기 버튼 */}
+              <Pressable
+                style={styles.closeButton}
+                onPress={() => setModalVisible(!modalVisible)}
+              >
+                <Text style={styles.closeButtonText}>닫기</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <TabHeader
@@ -532,7 +791,7 @@ const TabScreen1 = ({ navigation }) => {
       </View>
 
       {mapModeVisible ? (
-        <MapView
+        <MapContent
           data={data.filter(
             (content) =>
               content.email !== userId &&
@@ -552,7 +811,7 @@ const TabScreen1 = ({ navigation }) => {
                 selectedEndTime <= content.end_time
             )
             .map((content, index) => (
-              <ContentBox key={index} content={content} />
+              <ContentBox key={index} content={content} fetchData={fetchData} />
             ))}
         </ScrollView>
       )}
