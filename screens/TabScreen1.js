@@ -16,8 +16,6 @@ import { idToken, userId } from "./LoginScreen";
 import MapView, { Marker } from "react-native-maps";
 import Geocoder from "react-native-geocoding";
 import * as Location from "expo-location";
-import { AppNavigator } from "./TabScreen4";
-import { createAppContainer } from "react-navigation";
 
 const styles = StyleSheet.create({
   container: {
@@ -581,14 +579,21 @@ const TabScreen1 = () => {
 
         const geocodedMarkers = await Promise.all(
           data.map(async (content) => {
+            console.log(content.address);
             let geocode;
 
             try {
               geocode = await Geocoder.from(content.address);
             } catch (error) {
               console.error("Geocoding error:", error);
-              geocode = [];
+              geocode = null;
             }
+
+            if (!geocode || !geocode.results || geocode.results.length === 0) {
+              console.error("No geocode results for address:", content.address);
+              return content;
+            }
+
             return {
               ...content,
               location: {
@@ -598,6 +603,7 @@ const TabScreen1 = () => {
             };
           })
         );
+
         // 지오코딩된 좌표로 마커 설정
         setMarkers(geocodedMarkers);
       })();

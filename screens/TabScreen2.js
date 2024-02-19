@@ -450,7 +450,7 @@ const TabScreen2 = ({ navigation }) => {
       </View>
       <View style={{ marginVertical: 5 }} />
       {isPostSubmitted && responseData ? (
-        responseData.status === "reserved" ? (
+        responseData.status === "waiting" ? (
           // 맡기 일정
           <ScrollView>
             <Text style={styles.largeText2}>예정된 맡기 일정</Text>

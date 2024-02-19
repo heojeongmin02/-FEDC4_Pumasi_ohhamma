@@ -50,8 +50,6 @@ const ChatListScreen = ({ route, navigation }) => {
   //const inviteUserEmail = route.params.inviteUserEmail;
   const [chatRooms, setChatRooms] = useState([]);
 
-  console.log(inviteUserEmail);
-
   const createChatRoom = async (inviteUserEmail) => {
     try {
       const response = await fetch("http://pumasi.everdu.com/chat/", {
@@ -96,7 +94,6 @@ const ChatListScreen = ({ route, navigation }) => {
           Authorization: `${idToken}`,
         },
       });
-
       if (response.ok) {
         const fetchedChatRooms = await response.json();
         setChatRooms(fetchedChatRooms);
@@ -113,6 +110,7 @@ const ChatListScreen = ({ route, navigation }) => {
   }, []);
 
   const navigateToChatRoom = (roomId, roomName) => {
+    console.log(`채팅방 ID: ${roomId}, 이름: ${roomName}`);
     navigation.navigate("ChatRoom", { roomId, roomName });
   };
 
@@ -141,6 +139,7 @@ const ChatRoomScreen = ({ navigation }) => {
   const roomName = navigation.getParam("roomName", "채팅방");
 
   const fetchMessages = async () => {
+    console.log(roomId);
     try {
       const response = await fetch(`http://pumasi.everdu.com/chat/${roomId}`, {
         method: "GET",
@@ -148,7 +147,7 @@ const ChatRoomScreen = ({ navigation }) => {
           Authorization: `${idToken}`,
         },
       });
-
+      console.log(response);
       if (response.ok) {
         const fetchedMessages = await response.json();
         setMessages(fetchedMessages);
