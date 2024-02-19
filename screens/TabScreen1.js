@@ -16,6 +16,8 @@ import { idToken, userId } from "./LoginScreen";
 import MapView, { Marker } from "react-native-maps";
 import Geocoder from "react-native-geocoding";
 import * as Location from "expo-location";
+import { AppNavigator } from "./TabScreen4";
+import { createAppContainer } from "react-navigation";
 
 const styles = StyleSheet.create({
   container: {
@@ -184,6 +186,8 @@ const styles = StyleSheet.create({
   },
 });
 
+let inviteUserEmail = "";
+
 // 시간을 4자리 숫자로 받아서 00:00 형식으로 변환하는 함수
 const formatTime = (time) => {
   const hours = Math.floor(time / 100);
@@ -246,7 +250,7 @@ const ChildContentBox = ({ content, selectedChildId, setSelectedChildId }) => {
 };
 
 // ContentBox 컴포넌트
-const ContentBox = ({ content, fetchData, navigation }) => {
+const ContentBox = ({ content, fetchData }) => {
   const [isClicked, setIsClicked] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [childData, setChildData] = useState([]);
@@ -279,7 +283,8 @@ const ContentBox = ({ content, fetchData, navigation }) => {
         if (response.ok) {
           console.log("Success");
           alert("예약되었습니다. 채팅을 시작해보세요!");
-          navigation.navigate("ChatList", { inviteUserEmail: content.email });
+          inviteUserEmail = content.email;
+          console.log(inviteUserEmail);
           fetchData();
         } else {
           console.error("Error:", response.statusText);
@@ -443,7 +448,7 @@ const ContentBox = ({ content, fetchData, navigation }) => {
   );
 };
 
-const TabScreen1 = (navigation) => {
+const TabScreen1 = () => {
   const [mapModeVisible, setMapModeVisible] = useState(false);
   const [data, setData] = useState([]);
   const [selectedStartTime, setSelectedStartTime] = useState("");
@@ -814,12 +819,7 @@ const TabScreen1 = (navigation) => {
                 selectedEndTime <= content.end_time
             )
             .map((content, index) => (
-              <ContentBox
-                key={index}
-                content={content}
-                fetchData={fetchData}
-                navigation={navigation}
-              />
+              <ContentBox key={index} content={content} fetchData={fetchData} />
             ))}
         </ScrollView>
       )}
@@ -828,3 +828,4 @@ const TabScreen1 = (navigation) => {
 };
 
 export default TabScreen1;
+export { inviteUserEmail };

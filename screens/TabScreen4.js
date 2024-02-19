@@ -7,6 +7,7 @@ import { createStackNavigator } from "react-navigation-stack";
 import { FlatList, TouchableOpacity } from "react-native-gesture-handler";
 import { GiftedChat, Bubble } from "react-native-gifted-chat";
 import { idToken } from "./LoginScreen";
+import { inviteUserEmail } from "./TabScreen1";
 
 const styles = StyleSheet.create({
   container: {
@@ -45,9 +46,11 @@ const TabHeader = ({ name }) => (
 );
 
 const ChatListScreen = ({ route, navigation }) => {
-  const inviteUserEmail = route?.params?.inviteUserEmail;
+  // const inviteUserEmail = route?.params?.inviteUserEmail;
   //const inviteUserEmail = route.params.inviteUserEmail;
   const [chatRooms, setChatRooms] = useState([]);
+
+  console.log(inviteUserEmail);
 
   const createChatRoom = async (inviteUserEmail) => {
     try {
@@ -161,22 +164,22 @@ const ChatRoomScreen = ({ navigation }) => {
     fetchMessages();
   }, [roomId, idToken]);
 
-  const fetchMessagesPeriodically = async () => {
-    await fetchMessages();
+  // const fetchMessagesPeriodically = async () => {
+  //   await fetchMessages();
 
-    const intervalId = setInterval(async () => {
-      await fetchMessages();
-    }, 10000); // 10초
+  //   const intervalId = setInterval(async () => {
+  //     await fetchMessages();
+  //   }, 10000); // 10초
 
-    // clearInterval 호출하여 중단
-    return () => {
-      clearInterval(intervalId);
-    };
-  };
+  //   // clearInterval 호출하여 중단
+  //   return () => {
+  //     clearInterval(intervalId);
+  //   };
+  // };
 
-  useEffect(() => {
-    fetchMessagesPeriodically();
-  }, [roomId, idToken]);
+  // useEffect(() => {
+  //   fetchMessagesPeriodically();
+  // }, [roomId, idToken]);
 
   const onSend = async (newMessages = []) => {
     try {

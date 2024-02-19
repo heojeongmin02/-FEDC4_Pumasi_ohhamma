@@ -9,6 +9,7 @@ import TabScreen4 from "./screens/TabScreen4";
 import TabScreen5 from "./screens/TabScreen5";
 import LoginScreen from "./screens/LoginScreen";
 import { PostProvider } from "./screens/PostContext";
+import { NavigationContainer } from "@react-navigation/native";
 
 const tabs = [
   {
