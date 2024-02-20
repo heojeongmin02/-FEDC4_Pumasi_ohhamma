@@ -6,7 +6,7 @@ import { createAppContainer } from "react-navigation";
 import { createStackNavigator } from "react-navigation-stack";
 import { FlatList, TouchableOpacity } from "react-native-gesture-handler";
 import { GiftedChat, Bubble } from "react-native-gifted-chat";
-import { idToken } from "./LoginScreen";
+import { idToken, userId } from "./LoginScreen";
 import { inviteUserEmail } from "./TabScreen1";
 
 const styles = StyleSheet.create({
@@ -36,6 +36,7 @@ const styles = StyleSheet.create({
   },
   chatItemText: {
     fontSize: 24,
+    color: "#9a9a9a",
   },
 });
 
@@ -46,9 +47,9 @@ const TabHeader = ({ name }) => (
 );
 
 const ChatListScreen = ({ route, navigation }) => {
-  // const inviteUserEmail = route?.params?.inviteUserEmail;
-  //const inviteUserEmail = route.params.inviteUserEmail;
   const [chatRooms, setChatRooms] = useState([]);
+
+  console.log(inviteUserEmail);
 
   const createChatRoom = async (inviteUserEmail) => {
     try {
@@ -94,6 +95,7 @@ const ChatListScreen = ({ route, navigation }) => {
           Authorization: `${idToken}`,
         },
       });
+
       if (response.ok) {
         const fetchedChatRooms = await response.json();
         setChatRooms(fetchedChatRooms);
@@ -110,7 +112,6 @@ const ChatListScreen = ({ route, navigation }) => {
   }, []);
 
   const navigateToChatRoom = (roomId, roomName) => {
-    console.log(`채팅방 ID: ${roomId}, 이름: ${roomName}`);
     navigation.navigate("ChatRoom", { roomId, roomName });
   };
 
@@ -118,14 +119,15 @@ const ChatListScreen = ({ route, navigation }) => {
     <View style={[styles.container, { backgroundColor: "white" }]}>
       <FlatList
         data={chatRooms}
-        // keyExtractor={(item) => item.id.toString()}
-        keyExtractor={(item, index) => item.id || index.toString()}
+        keyExtractor={(item) => item.room_id}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.chatItem}
-            onPress={() => navigateToChatRoom(item.id, item.name)}
+            onPress={() =>
+              navigateToChatRoom(item.room_id, item.members.join(", "))
+            }
           >
-            <Text style={styles.chatItemText}>{item.name}</Text>
+            <Text style={styles.chatItemText}>{item.members.join(", ")}</Text>
           </TouchableOpacity>
         )}
       />
@@ -138,8 +140,29 @@ const ChatRoomScreen = ({ navigation }) => {
   const roomId = navigation.getParam("roomId", 0);
   const roomName = navigation.getParam("roomName", "채팅방");
 
+  const onSend = async (newMessages = []) => {
+    try {
+      const response = await fetch(
+        `http://pumasi.everdu.com/chat/${roomId}/message`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${idToken}`,
+          },
+          body: JSON.stringify({ message: newMessages[0].text }),
+        }
+      );
+
+      setMessages((prevMessages) =>
+        GiftedChat.append(prevMessages, newMessages)
+      );
+    } catch (error) {
+      console.error("메시지 전송 중 오류:", error.message);
+    }
+  };
+
   const fetchMessages = async () => {
-    console.log(roomId);
     try {
       const response = await fetch(`http://pumasi.everdu.com/chat/${roomId}`, {
         method: "GET",
@@ -147,10 +170,29 @@ const ChatRoomScreen = ({ navigation }) => {
           Authorization: `${idToken}`,
         },
       });
-      console.log(response);
+
       if (response.ok) {
         const fetchedMessages = await response.json();
-        setMessages(fetchedMessages);
+
+        const formattedMessages = fetchedMessages.map((message, index) => {
+          let dateStr = message.send_time;
+          let formattedDateStr = dateStr.replace(", ", "T").replace(/\//g, "-");
+          let date = new Date(formattedDateStr);
+
+          return {
+            _id: index,
+            text: message.message,
+            createdAt: date,
+            user: {
+              _id: message.sender,
+              name: message.sender,
+            },
+          };
+        });
+
+        formattedMessages.sort((a, b) => b.createdAt - a.createdAt);
+
+        setMessages(formattedMessages);
       } else {
         throw new Error("메시지 불러오기 실패");
       }
@@ -163,41 +205,15 @@ const ChatRoomScreen = ({ navigation }) => {
     fetchMessages();
   }, [roomId, idToken]);
 
-  // const fetchMessagesPeriodically = async () => {
-  //   await fetchMessages();
+  useEffect(() => {
+    const timerID = setInterval(() => {
+      fetchMessages();
+    }, 1000);
 
-  //   const intervalId = setInterval(async () => {
-  //     await fetchMessages();
-  //   }, 10000); // 10초
-
-  //   // clearInterval 호출하여 중단
-  //   return () => {
-  //     clearInterval(intervalId);
-  //   };
-  // };
-
-  // useEffect(() => {
-  //   fetchMessagesPeriodically();
-  // }, [roomId, idToken]);
-
-  const onSend = async (newMessages = []) => {
-    try {
-      await fetch(`http://pumasi.everdu.com/chat/${roomId}/message/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `${idToken}`,
-        },
-        body: JSON.stringify({ message: newMessages[0].text }),
-      });
-
-      setMessages((prevMessages) =>
-        GiftedChat.append(prevMessages, newMessages)
-      );
-    } catch (error) {
-      console.error("메시지 전송 중 오류:", error.message);
-    }
-  };
+    return () => {
+      clearInterval(timerID);
+    };
+  }, [roomId, idToken]);
 
   return (
     <View style={styles.contentContainer}>
@@ -205,7 +221,7 @@ const ChatRoomScreen = ({ navigation }) => {
         messages={messages}
         onSend={(newMessages) => onSend(newMessages)}
         user={{
-          _id: 1,
+          _id: userId,
         }}
         renderBubble={(props) => (
           <Bubble
