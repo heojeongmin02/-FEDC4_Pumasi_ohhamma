@@ -46,7 +46,7 @@ const TabHeader = ({ name }) => (
   </View>
 );
 
-const ChatListScreen = ({ route, navigation }) => {
+const ChatListScreen = ({ navigation }) => {
   const [chatRooms, setChatRooms] = useState([]);
 
   console.log(inviteUserEmail);
@@ -75,17 +75,17 @@ const ChatListScreen = ({ route, navigation }) => {
     }
   };
 
-  useEffect(() => {
-    const fetchAndCreateChatRoom = async () => {
-      if (inviteUserEmail) {
-        const { roomId, roomName } = await createChatRoom(inviteUserEmail);
-        console.log(`생성된 채팅방 ID: ${roomId}, 이름: ${roomName}`);
+  const findChatRoom = (chatRooms, inviteUserEmail) => {
+    for (const chatRoom of chatRooms) {
+      if (chatRoom.members.includes(inviteUserEmail)) {
+        return {
+          roomId: chatRoom.room_id,
+          roomName: chatRoom.members.join(", "),
+        };
       }
-      await fetchChatRooms();
-    };
-
-    fetchAndCreateChatRoom();
-  }, [inviteUserEmail]);
+    }
+    return null;
+  };
 
   const fetchChatRooms = async () => {
     try {
@@ -99,6 +99,7 @@ const ChatListScreen = ({ route, navigation }) => {
       if (response.ok) {
         const fetchedChatRooms = await response.json();
         setChatRooms(fetchedChatRooms);
+        return fetchedChatRooms;
       } else {
         throw new Error("채팅방 불러오기 실패");
       }
@@ -108,8 +109,17 @@ const ChatListScreen = ({ route, navigation }) => {
   };
 
   useEffect(() => {
-    fetchChatRooms();
-  }, []);
+    const fetchAndCreateChatRoom = async () => {
+      const fetchedChatRooms = await fetchChatRooms();
+      const existingChatRoom = findChatRoom(fetchedChatRooms, inviteUserEmail);
+      if (inviteUserEmail && !existingChatRoom) {
+        const { roomId, roomName } = await createChatRoom(inviteUserEmail);
+        console.log(`생성된 채팅방 ID: ${roomId}, 이름: ${roomName}`);
+      }
+    };
+
+    fetchAndCreateChatRoom();
+  }, [inviteUserEmail]);
 
   const navigateToChatRoom = (roomId, roomName) => {
     navigation.navigate("ChatRoom", { roomId, roomName });
