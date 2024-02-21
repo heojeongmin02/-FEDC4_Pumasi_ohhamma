@@ -1,11 +1,25 @@
-# -FEDC4_Pumasi_ohhamma
+아래의 외부 라이브러리들 설치해야해용
 
-Pumasi에서 대문자로 시작하지 않는게 스텐다드라는 말도 있고 버전 맞추기, 깃허브 관련 등 다양한 이슈로
-App.js, TabNavigator.js, screens 폴더 내 js file들만 임시로 올려두었습니다.
+npm install react-native-maps  
+npm install react-native-unimodules  
+npm install @react-native-community/geolocation  
+npm install expo-location
+npm install react-native-geocoding
+npm install @react-native-community/datetimepicker
 
-# 앱 실행 방법
-1. expo init <로컬에서 사용하는 이름>  입력
-2. blank인가? 첫번째 옵션 선택
-2. 위에 명시한 파일들을 붙여넣기
-3. npm start 입력
-4. QR코드 스캔해서 핸드폰으로 확인
+<multislider 명령어>
+
+npm install @ptomasroos/react-native-multi-slider
+
+<채팅방 명령어>
+
+npm install react-navigation react-navigation-stack react-native-gifted-chat
+
+<picker 오류날 시>
+
+```
+npm install expo@latest
+npx expo install --fix
+```
+
+(https://github.com/react-native-datetimepicker/datetimepicker/issues/808 참고)
