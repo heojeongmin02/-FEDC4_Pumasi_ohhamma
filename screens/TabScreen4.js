@@ -1,7 +1,7 @@
 // TabScreen4.js
 
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Alert } from "react-native";
 import { createAppContainer } from "react-navigation";
 import { createStackNavigator } from "react-navigation-stack";
 import { FlatList, TouchableOpacity } from "react-native-gesture-handler";
@@ -115,6 +115,35 @@ const ChatListScreen = ({ route, navigation }) => {
     navigation.navigate("ChatRoom", { roomId, roomName });
   };
 
+  const deleteChatRoom = async (roomId) => {
+    try {
+      const response = await fetch(`http://pumasi.everdu.com/chat/${roomId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `${idToken}`,
+        },
+      });
+
+      if (response.ok) {
+        fetchChatRooms();
+      } else {
+        throw new Error("채팅방 삭제 실패");
+      }
+    } catch (error) {
+      console.error("채팅방 삭제 중 오류:", error.message);
+    }
+  };
+
+  const confirmDeleteChatRoom = (roomId) => {
+    Alert.alert("채팅방 나가기", "", [
+      {
+        text: "취소",
+        style: "cancel",
+      },
+      { text: "나가기", onPress: () => deleteChatRoom(roomId) },
+    ]);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: "white" }]}>
       <FlatList
@@ -126,6 +155,7 @@ const ChatListScreen = ({ route, navigation }) => {
             onPress={() =>
               navigateToChatRoom(item.room_id, item.members.join(", "))
             }
+            onLongPress={() => confirmDeleteChatRoom(item.room_id)}
           >
             <Text style={styles.chatItemText}>{item.members.join(", ")}</Text>
           </TouchableOpacity>
