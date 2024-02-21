@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
+import os
+
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -25,7 +27,7 @@ SECRET_KEY = 'django-insecure-qkc!t-c&n3h20n63omptvd!=l)(iy_3x%_2ocfqcga&2o_s5_j
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -38,6 +40,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'care',
+    'user',
+    'chat',
 ]
 
 MIDDLEWARE = [
@@ -81,6 +86,13 @@ DATABASES = {
     }
 }
 
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework.authentication.SessionAuthentication",
+        "pumasi.authentication.FirebaseAuthentication",
+    ),
+}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -106,7 +118,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Seoul'
 
 USE_I18N = True
 
@@ -117,6 +129,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
@@ -126,13 +139,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Firebase Settings
 import os
 import firebase_admin
+import pyrebase
 from firebase_admin import credentials
 
 # FIREBASE_UNIVERSE_DOMAIN = os.environ.get('FIREBASE_UNIVERSE_DOMAIN')
 
 if not firebase_admin._apps:
     """SETUP FIREBASE CREDENTIALS"""
-    cred = credentials.Certificate({
+    cred_info = {
         "type": os.environ.get('FIREBASE_ACCOUNT_TYPE'),
         "project_id": os.environ.get('FIREBASE_PROJECT_ID'),
         "private_key_id": os.environ.get('FIREBASE_PRIVATE_KEY_ID'),
@@ -143,6 +157,16 @@ if not firebase_admin._apps:
         "token_uri": os.environ.get('FIREBASE_TOKEN_URI'),
         "auth_provider_x509_cert_url": os.environ.get('FIREBASE_AUTH_PROVIDER_X509_CERT_URL'),
         "client_x509_cert_url": os.environ.get('FIREBASE_CLIENT_X509_CERT_URL')
-    })
+    }
 
-    default_app = firebase_admin.initialize_app(cred)
+    default_app = firebase_admin.initialize_app(credentials.Certificate(cred_info))
+
+    pyrebase_config = {
+        "apiKey": os.environ.get('FIREBASE_CLIENT_API_KEY'),
+        "authDomain": f"{os.environ.get('FIREBASE_PROJECT_ID')}.firebaseapp.com",
+        "databaseURL": "",
+        "storageBucket": f"{os.environ.get('FIREBASE_PROJECT_ID')}.appspot.com",
+        "serviceAccount": cred_info
+    }
+
+    pyrebase_app = pyrebase.initialize_app(pyrebase_config)
