@@ -67,6 +67,9 @@ const LoginScreen = ({ onLogin }) => {
 
       if (response.ok) {
         console.log(`회원가입 성공`);
+        alert(
+          "회원가입이 완료되었습니다. \n로그인 버튼을 눌러 로그인해주세요."
+        );
       } else {
         alert("회원가입에 실패했습니다. 다시 시도해주세요.");
         console.error("Server error:", response.status);

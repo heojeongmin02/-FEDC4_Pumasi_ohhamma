@@ -251,6 +251,7 @@ const TabScreen5 = () => {
 
         if (response.ok) {
           console.log("Child added successfully");
+          alert("아이가 정상적으로 추가됐어요!");
           fetchChildData();
           setModalVisible(false);
         } else {
@@ -622,6 +623,7 @@ const TabScreen5 = () => {
         .then((response) => {
           if (response.ok) {
             console.log("Review submitted successfully");
+            alert("리뷰가 정상적으로 제출됐어요!");
             fetchCareData();
           } else {
             console.error("Error submitting review:", response.status);

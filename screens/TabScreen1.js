@@ -687,8 +687,6 @@ const TabScreen1 = () => {
                   latitude: content.location?.latitude || 0,
                   longitude: content.location?.longitude || 0,
                 }}
-                title={content.address}
-                description={`평점: ${content.rating}`}
                 onPress={() => handleMarkerPress(content)}
               />
             ))}
